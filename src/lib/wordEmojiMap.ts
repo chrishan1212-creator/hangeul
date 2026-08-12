@@ -120,5 +120,5 @@ export function matchWordToEmoji(transcript: string): MatchResult {
     return { word: bestKey, emoji: WORD_EMOJI_MAP[bestKey], matched: true };
   }
 
-  return { word: cleaned, emoji: "🗣️", matched: false };
+  return { word: cleaned, emoji: "💬", matched: false };
 }
