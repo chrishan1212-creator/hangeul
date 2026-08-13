@@ -1,5 +1,6 @@
 import Link from "next/link";
 import PlayShell from "@/components/PlayShell";
+import SettingsButton from "@/components/SettingsButton";
 
 const MENU = [
   {
@@ -19,7 +20,11 @@ const MENU = [
 export default function Home() {
   return (
     <PlayShell>
-      <header className="relative z-10 pt-6 text-center">
+      <div className="relative z-10 flex w-full max-w-md justify-end">
+        <SettingsButton />
+      </div>
+
+      <header className="relative z-10 text-center">
         <h1 className="font-jua text-4xl text-white drop-shadow-[0_4px_0_rgba(0,0,0,0.2)] sm:text-5xl">
           🐥 한글 놀이터
         </h1>

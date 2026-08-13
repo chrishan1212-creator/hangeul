@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Jua, Gaegu } from "next/font/google";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import AppBootstrap from "@/components/AppBootstrap";
 import "./globals.css";
 
 const jua = Jua({
@@ -52,6 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ko" className={`${jua.variable} ${gaegu.variable}`}>
       <body className="font-gaegu antialiased">
         <ServiceWorkerRegister />
+        <AppBootstrap />
         {children}
       </body>
     </html>

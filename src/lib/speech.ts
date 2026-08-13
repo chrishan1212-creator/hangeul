@@ -6,6 +6,8 @@
  * 순서대로 말하게 하려고 Promise를 반환한다.
  */
 import { getClipUrl, playClip, stopClip } from "./audioClips";
+import { duckBgm } from "./bgm";
+import { getSettings } from "./settings";
 
 interface SpeakOptions {
   rate?: number;
@@ -84,11 +86,25 @@ export function cancelSpeech(): void {
   window.speechSynthesis.cancel();
 }
 
-/** 말할 내용이 있으면 녹음 파일을, 없으면 TTS를 쓴다 */
+/**
+ * 말할 내용이 있으면 녹음 파일을, 없으면 TTS를 쓴다.
+ * 말하는 동안에는 배경음악을 잠깐 줄여서 목소리가 잘 들리게 한다.
+ */
 export function speak(text: string, options: SpeakOptions = {}): Promise<void> {
+  if (!getSettings().voice) return Promise.resolve();
+
   const clip = getClipUrl(text);
-  if (clip) return playClip(clip);
-  return speakWithTts(text, options);
+  return withDuckedBgm(() => (clip ? playClip(clip) : speakWithTts(text, options)));
+}
+
+/** 말하는 동안만 배경음악을 낮췄다가 되돌린다 */
+async function withDuckedBgm(run: () => Promise<void>): Promise<void> {
+  duckBgm(true);
+  try {
+    await run();
+  } finally {
+    duckBgm(false);
+  }
 }
 
 /**
@@ -97,16 +113,19 @@ export function speak(text: string, options: SpeakOptions = {}): Promise<void> {
  * (녹음 목소리와 기계 목소리가 한 문장 안에서 섞이지 않게 하기 위해서다)
  */
 export async function speakPhrase(parts: string[], options: SpeakOptions = {}): Promise<void> {
+  if (!getSettings().voice) return;
+
   const urls = parts.map(getClipUrl);
 
-  if (urls.every((url): url is string => url !== null)) {
-    for (const url of urls) {
-      await playClip(url);
+  await withDuckedBgm(async () => {
+    if (urls.every((url): url is string => url !== null)) {
+      for (const url of urls) {
+        await playClip(url);
+      }
+      return;
     }
-    return;
-  }
-
-  await speakWithTts(parts.join(""), options);
+    await speakWithTts(parts.join(""), options);
+  });
 }
 
 /** cancel() 직후에 바로 speak() 하면 씹히는 브라우저가 있어 살짝 텀을 준다 */

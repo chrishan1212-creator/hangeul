@@ -10,6 +10,7 @@ import PlayShell from "@/components/PlayShell";
 import TypingInput from "@/components/TypingInput";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { matchWordToEmoji } from "@/lib/wordEmojiMap";
+import SettingsButton from "@/components/SettingsButton";
 import { cancelSpeech, primeSpeech, speak } from "@/lib/speech";
 
 const ENCOURAGEMENTS = ["참 잘했어요!", "최고예요!", "우와, 대단해요!", "딩동댕!", "잘 들었어요!"];
@@ -21,10 +22,7 @@ export default function SpeakPage() {
   const [recentWords, setRecentWords] = useState<RecentWord[]>([]);
   const [confettiKey, setConfettiKey] = useState(0);
   const [popKey, setPopKey] = useState(0);
-  const [soundOn, setSoundOn] = useState(true);
   const idRef = useRef(0);
-  const soundOnRef = useRef(soundOn);
-  soundOnRef.current = soundOn;
 
   // 음성으로 들었든, 타이핑으로 입력했든 여기서 같은 방식으로 처리한다.
   // 사전에 없는 단어도 매칭이 안 될 뿐 화면에는 그대로 표시된다 (matchWordToEmoji 참고).
@@ -46,10 +44,8 @@ export default function SpeakPage() {
     idRef.current += 1;
     setRecentWords((prev) => [{ id: idRef.current, word, emoji }, ...prev].slice(0, 8));
 
-    if (soundOnRef.current) {
-      cancelSpeech();
-      void speak(word, { rate: 0.95 });
-    }
+    cancelSpeech();
+    void speak(word, { rate: 0.95 });
   }, []);
 
   const { status, errorMessage, isSupported, start, stop } = useSpeechRecognition({
@@ -81,15 +77,7 @@ export default function SpeakPage() {
           ← 홈
         </Link>
         <h1 className="font-jua text-xl text-white drop-shadow sm:text-2xl">🎤 말하기 놀이</h1>
-        <button
-          type="button"
-          onClick={() => setSoundOn((s) => !s)}
-          aria-pressed={soundOn}
-          aria-label={soundOn ? "소리 끄기" : "소리 켜기"}
-          className="rounded-full bg-white/25 px-3 py-2 text-xl backdrop-blur-sm transition hover:bg-white/35"
-        >
-          {soundOn ? "🔊" : "🔇"}
-        </button>
+        <SettingsButton />
       </header>
 
       <section className="relative z-10 flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-6 py-6">

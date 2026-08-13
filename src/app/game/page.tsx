@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import PlayShell from "@/components/PlayShell";
 import GameBoard from "@/components/game/GameBoard";
+import SettingsButton from "@/components/SettingsButton";
 import { GameMode, MODE_LIST } from "@/lib/gameData";
 import { unlockAudio } from "@/lib/sfx";
 import { primeSpeech } from "@/lib/speech";
@@ -45,7 +46,7 @@ export default function GamePage() {
           ← 홈
         </Link>
         <h1 className="font-jua text-2xl text-white drop-shadow">🎮 찾기 게임</h1>
-        <span className="w-16" aria-hidden />
+        <SettingsButton />
       </header>
 
       <section className="relative z-10 flex w-full max-w-md flex-1 flex-col justify-center gap-5 py-6">

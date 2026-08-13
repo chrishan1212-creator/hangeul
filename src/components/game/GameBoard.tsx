@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Confetti from "@/components/Confetti";
 import ChoiceTile from "./ChoiceTile";
 import DinoTrack from "./DinoTrack";
+import SettingsButton from "@/components/SettingsButton";
 import {
   GameMode,
   Question,
@@ -198,9 +199,12 @@ export default function GameBoard({
           >
             ← 뒤로
           </button>
-          <span className="rounded-full bg-white/25 px-4 py-2 font-jua text-lg text-white backdrop-blur-sm">
-            ⭐ {score}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-white/25 px-4 py-2 font-jua text-lg text-white backdrop-blur-sm">
+              ⭐ {score}
+            </span>
+            <SettingsButton />
+          </div>
         </header>
 
         <DinoTrack dino={dino} step={step} goal={JOURNEY_GOAL} feasting={feasting} />
