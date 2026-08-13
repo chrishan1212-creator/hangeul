@@ -93,10 +93,17 @@ export interface MatchResult {
   matched: boolean;
 }
 
+// 부분 일치(포함) 매칭에 쓰기에는 너무 짧아서 엉뚱한 단어를 잡아먹는 글자 수.
+// 예: "밥"(1글자)이 사전에 있으면 "밥솥"을 말했을 때 "밥"으로 잘못 인식되어 버린다.
+// 1글자 단어는 정확히 그 글자만 말했을 때(완전 일치)만 인정하고,
+// 다른 단어 속에 우연히 포함된 경우는 무시한다.
+const MIN_PARTIAL_MATCH_LENGTH = 2;
+
 /**
  * 인식된 음성 텍스트에서 가장 잘 맞는 단어와 이모지를 찾는다.
  * 1) 정확히 일치하는 단어 우선
- * 2) 사전에 있는 단어가 문장 안에 포함되어 있으면 그중 가장 긴 단어 선택
+ * 2) 사전에 있는 2글자 이상 단어가 문장 안에 포함되어 있으면 그중 가장 긴 단어 선택
+ *    (1글자 단어는 완전 일치가 아니면 후보에서 제외 - 위 설명 참고)
  * 3) 못 찾으면 원래 들린 말 그대로 보여주고 기본 이모지를 붙인다
  */
 export function matchWordToEmoji(transcript: string): MatchResult {
@@ -111,6 +118,7 @@ export function matchWordToEmoji(transcript: string): MatchResult {
 
   let bestKey = "";
   for (const key of Object.keys(WORD_EMOJI_MAP)) {
+    if (key.length < MIN_PARTIAL_MATCH_LENGTH) continue;
     if (cleaned.includes(key) && key.length > bestKey.length) {
       bestKey = key;
     }
