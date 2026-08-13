@@ -1,15 +1,18 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import PlayShell from "@/components/PlayShell";
-import GameBoard from "@/components/game/GameBoard";
+import GameBoard from "./GameBoard";
 import SettingsButton from "@/components/SettingsButton";
 import { GameMode, MODE_LIST } from "@/lib/gameData";
 import { unlockAudio } from "@/lib/sfx";
 import { primeSpeech } from "@/lib/speech";
 
-export default function GamePage() {
+interface GamePlayProps {
+  onHome: () => void;
+}
+
+export default function GamePlay({ onHome }: GamePlayProps) {
   const [mode, setMode] = useState<GameMode | null>(null);
   const [includeBatchim, setIncludeBatchim] = useState(false);
   const [choiceCount, setChoiceCount] = useState(4);
@@ -39,12 +42,13 @@ export default function GamePage() {
   return (
     <PlayShell>
       <header className="relative z-10 flex w-full max-w-md items-center justify-between">
-        <Link
-          href="/"
+        <button
+          type="button"
+          onClick={onHome}
           className="rounded-full bg-white/25 px-4 py-2 font-jua text-lg text-white backdrop-blur-sm transition hover:bg-white/35"
         >
           ← 홈
-        </Link>
+        </button>
         <h1 className="font-jua text-2xl text-white drop-shadow">🎮 찾기 게임</h1>
         <SettingsButton />
       </header>

@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import VoiceCheck from "./VoiceCheck";
 import { syncBgm } from "@/lib/bgm";
 import { unlockAudio } from "@/lib/audioContext";
 import { playCorrect } from "@/lib/sfx";
@@ -44,6 +44,7 @@ function ToggleRow({ emoji, label, hint, on, onChange }: ToggleRowProps) {
 
 export default function SettingsButton() {
   const [open, setOpen] = useState(false);
+  const [showVoiceCheck, setShowVoiceCheck] = useState(false);
   const [mounted, setMounted] = useState(false);
   const settings = useSettings();
 
@@ -215,18 +216,27 @@ export default function SettingsButton() {
                 </div>
               </div>
 
-              <Link
-                href="/voice"
-                onClick={() => setOpen(false)}
+              <button
+                type="button"
+                onClick={() => setShowVoiceCheck(true)}
                 className="rounded-2xl bg-white/25 px-4 py-3 text-center font-jua text-sm text-white transition hover:bg-white/35"
               >
                 🔎 목소리 점검하기
-              </Link>
+              </button>
             </div>
           </div>
         </div>,
         document.body
       )}
+
+      {showVoiceCheck &&
+        mounted &&
+        createPortal(
+          <div className="fixed inset-0 z-[60] overflow-y-auto">
+            <VoiceCheck onClose={() => setShowVoiceCheck(false)} />
+          </div>,
+          document.body
+        )}
     </>
   );
 }

@@ -33,13 +33,16 @@ let cachedVoice: SpeechSynthesisVoice | null = null;
  * 상태에서 말하려고 하면 아무 소리도 나지 않는 경우가 있어서, 목록이 찰
  * 때까지 잠깐 기다렸다가 말한다. (이미 차 있으면 곧바로 진행한다)
  */
+let voicesChecked = false;
+
 function waitForVoices(timeoutMs = 1500): Promise<void> {
   return new Promise((resolve) => {
-    if (!isSpeechAvailable()) {
+    if (!isSpeechAvailable() || voicesChecked) {
       resolve();
       return;
     }
     if (window.speechSynthesis.getVoices().length > 0) {
+      voicesChecked = true;
       resolve();
       return;
     }
@@ -48,6 +51,9 @@ function waitForVoices(timeoutMs = 1500): Promise<void> {
     const finish = () => {
       if (done) return;
       done = true;
+      // 한 번 기다려봤으면 다시는 기다리지 않는다.
+      // (목소리가 아예 없는 기기에서 말할 때마다 멈칫하지 않도록)
+      voicesChecked = true;
       clearTimeout(timer);
       window.speechSynthesis.removeEventListener("voiceschanged", finish);
       resolve();

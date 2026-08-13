@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
 import MicButton from "@/components/MicButton";
 import WordDisplay from "@/components/WordDisplay";
@@ -15,7 +14,11 @@ import { cancelSpeech, primeSpeech, speak } from "@/lib/speech";
 
 const ENCOURAGEMENTS = ["참 잘했어요!", "최고예요!", "우와, 대단해요!", "딩동댕!", "잘 들었어요!"];
 
-export default function SpeakPage() {
+interface SpeakPlayProps {
+  onHome: () => void;
+}
+
+export default function SpeakPlay({ onHome }: SpeakPlayProps) {
   const [currentWord, setCurrentWord] = useState("");
   const [currentEmoji, setCurrentEmoji] = useState("");
   const [praise, setPraise] = useState("");
@@ -70,12 +73,13 @@ export default function SpeakPage() {
       <Confetti triggerKey={confettiKey} />
 
       <header className="relative z-10 flex w-full max-w-3xl items-center justify-between">
-        <Link
-          href="/"
+        <button
+          type="button"
+          onClick={onHome}
           className="rounded-full bg-white/25 px-4 py-2 font-jua text-lg text-white backdrop-blur-sm transition hover:bg-white/35"
         >
           ← 홈
-        </Link>
+        </button>
         <h1 className="font-jua text-xl text-white drop-shadow sm:text-2xl">🎤 말하기 놀이</h1>
         <SettingsButton />
       </header>

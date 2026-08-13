@@ -1,26 +1,33 @@
 "use client";
 
-import { DinoInfo } from "@/lib/dino";
+import { DinoInfo, FoodItem } from "@/lib/dino";
 
 interface DinoTrackProps {
   dino: DinoInfo;
+  food: FoodItem;
   step: number;
   goal: number;
+  /** 밥을 먹을 때마다 공룡이 커진다 (1 = 처음 크기) */
+  scale: number;
   feasting: boolean;
 }
+
+/** 기본 공룡 크기(rem). 여기에 scale 을 곱해서 점점 커지게 한다. */
+const BASE_DINO_REM = 2.25;
 
 /**
  * 화면 위쪽에서 아기공룡이 음식을 향해 조금씩 걸어간다.
  * 문제를 하나 맞힐 때마다 한 걸음 앞으로 가고, 끝까지 가면 음식을 먹는다.
  */
-export default function DinoTrack({ dino, step, goal, feasting }: DinoTrackProps) {
-  // 음식 자리를 남겨두기 위해 공룡은 0% ~ 78% 구간만 움직인다
+export default function DinoTrack({ dino, food, step, goal, scale, feasting }: DinoTrackProps) {
+  // 음식 자리를 남겨두기 위해 공룡은 0% ~ 76% 구간만 움직인다
   const progress = Math.min(step / goal, 1);
-  const left = progress * 78;
+  const left = progress * 76;
+  const remaining = Math.max(goal - step, 0);
 
   return (
     <div className="relative z-10 w-full max-w-md pt-2">
-      <div className="relative h-14">
+      <div className="relative h-16">
         {/* 걸어가는 길 */}
         <div className="absolute inset-x-0 bottom-1 h-2.5 rounded-full bg-white/30" />
         <div
@@ -33,16 +40,16 @@ export default function DinoTrack({ dino, step, goal, feasting }: DinoTrackProps
           {feasting ? (
             <span className="animate-pop-in">✨</span>
           ) : (
-            <span className="animate-float">{dino.food}</span>
+            <span className="animate-float">{food.emoji}</span>
           )}
         </div>
 
         {/* 아기공룡 */}
         <div
-          className={`absolute bottom-3 text-4xl transition-all duration-700 ease-out ${
+          className={`absolute bottom-3 leading-none transition-all duration-700 ease-out ${
             feasting ? "animate-wiggle" : ""
           }`}
-          style={{ left: `${left}%` }}
+          style={{ left: `${left}%`, fontSize: `${BASE_DINO_REM * scale}rem` }}
         >
           {dino.emoji}
         </div>
@@ -50,8 +57,8 @@ export default function DinoTrack({ dino, step, goal, feasting }: DinoTrackProps
 
       <p className="text-center font-jua text-sm text-white/80">
         {feasting
-          ? "냠냠! 다 먹었어요 🎊"
-          : `${Math.max(goal - step, 0)}개 더 맞히면 ${dino.food} 먹어요!`}
+          ? `냠냠! ${food.name} 다 먹었어요 🎊`
+          : `${remaining}개 더 맞히면 ${food.emoji} 먹어요!`}
       </p>
     </div>
   );

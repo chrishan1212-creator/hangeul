@@ -1,59 +1,27 @@
-import Link from "next/link";
-import PlayShell from "@/components/PlayShell";
-import SettingsButton from "@/components/SettingsButton";
+"use client";
 
-const MENU = [
-  {
-    href: "/speak",
-    emoji: "🎤",
-    title: "말하기 놀이",
-    description: "말하면 큰 글씨와 그림으로 보여줘요",
-  },
-  {
-    href: "/game",
-    emoji: "🎮",
-    title: "찾기 게임",
-    description: "소리를 듣고 맞는 글자를 찾아요",
-  },
-];
+import { useState } from "react";
+import HomeMenu, { PlayView } from "@/components/HomeMenu";
+import SpeakPlay from "@/components/SpeakPlay";
+import GamePlay from "@/components/game/GamePlay";
 
+/**
+ * 앱 전체가 이 한 화면 안에서 상태만 바꿔가며 움직인다.
+ *
+ * 페이지를 옮겨다니면(주소가 바뀌면) 브라우저 사정에 따라 페이지가 통째로
+ * 다시 열리면서 배경음악이 끊기고 처음부터 재생될 수 있다. 그래서 화면 전환을
+ * 주소 이동 없이 상태 변경으로만 처리해, 어떤 경우에도 음악이 이어지게 한다.
+ */
 export default function Home() {
-  return (
-    <PlayShell>
-      <div className="relative z-10 flex w-full max-w-md justify-end">
-        <SettingsButton />
-      </div>
+  const [view, setView] = useState<PlayView>("home");
 
-      <header className="relative z-10 text-center">
-        <h1 className="font-jua text-4xl text-white drop-shadow-[0_4px_0_rgba(0,0,0,0.2)] sm:text-5xl">
-          🐥 한글 놀이터
-        </h1>
-        <p className="mt-2 font-jua text-lg text-white/90 drop-shadow sm:text-xl">
-          무엇을 하고 놀까요?
-        </p>
-      </header>
+  if (view === "speak") {
+    return <SpeakPlay onHome={() => setView("home")} />;
+  }
 
-      <section className="relative z-10 flex w-full max-w-md flex-1 flex-col justify-center gap-5 py-8">
-        {MENU.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="flex items-center gap-4 rounded-3xl bg-white/95 px-6 py-6 shadow-[0_8px_0_rgba(0,0,0,0.15)] transition active:translate-y-1.5 active:shadow-[0_3px_0_rgba(0,0,0,0.15)]"
-          >
-            <span className="text-6xl">{item.emoji}</span>
-            <span className="flex flex-col">
-              <span className="font-jua text-3xl text-slate-700">{item.title}</span>
-              <span className="font-jua text-sm text-slate-400">{item.description}</span>
-            </span>
-          </Link>
-        ))}
-      </section>
+  if (view === "game") {
+    return <GamePlay onHome={() => setView("home")} />;
+  }
 
-      <footer className="relative z-10 pb-2">
-        <p className="text-center font-jua text-sm text-white/80">
-          소리가 나오니 볼륨을 켜주세요 🔊
-        </p>
-      </footer>
-    </PlayShell>
-  );
+  return <HomeMenu onSelect={setView} />;
 }

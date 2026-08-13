@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import PlayShell from "@/components/PlayShell";
 
@@ -17,7 +16,11 @@ const SAMPLE = "안녕하세요. 나는 아기공룡이에요. 사과는 어디 
  * 어떤 한국어 목소리가 깔려 있는지 확인하고 하나씩 들어보는 점검용 화면.
  * 아이가 쓰는 화면이 아니라 어른이 확인하는 용도라 홈에는 링크를 두지 않았다.
  */
-export default function VoicePage() {
+interface VoiceCheckProps {
+  onClose: () => void;
+}
+
+export default function VoiceCheck({ onClose }: VoiceCheckProps) {
   const [voices, setVoices] = useState<VoiceRow[]>([]);
   const [supported, setSupported] = useState(true);
 
@@ -68,12 +71,13 @@ export default function VoicePage() {
   return (
     <PlayShell>
       <header className="relative z-10 flex w-full max-w-md items-center justify-between">
-        <Link
-          href="/"
+        <button
+          type="button"
+          onClick={onClose}
           className="rounded-full bg-white/25 px-4 py-2 font-jua text-lg text-white backdrop-blur-sm"
         >
-          ← 홈
-        </Link>
+          ← 뒤로
+        </button>
         <h1 className="font-jua text-xl text-white drop-shadow">🔎 목소리 점검</h1>
         <span className="w-16" aria-hidden />
       </header>

@@ -13,7 +13,15 @@ import {
   isLetterMode,
   makeQuestion,
 } from "@/lib/gameData";
-import { DinoInfo, JOURNEY_GOAL, randomDino } from "@/lib/dino";
+import {
+  DinoInfo,
+  FoodItem,
+  JOURNEY_GOAL,
+  buildFeastLine,
+  dinoScale,
+  randomDino,
+  randomFood,
+} from "@/lib/dino";
 import { playCorrect, playFeast, playWrong, unlockAudio } from "@/lib/sfx";
 import { cancelSpeech, delay, speak, speakPhrase } from "@/lib/speech";
 import { fillWidthFontSize } from "@/lib/textSize";
@@ -50,7 +58,10 @@ export default function GameBoard({
   const [confettiKey, setConfettiKey] = useState(0);
   const [showNext, setShowNext] = useState(false);
 
-  const [dino, setDino] = useState<DinoInfo>(() => randomDino());
+  // 공룡은 한 판 내내 같은 아이가 따라다니고, 밥을 먹을 때마다 조금씩 커진다
+  const [dino] = useState<DinoInfo>(() => randomDino());
+  const [round, setRound] = useState(0);
+  const [food, setFood] = useState<FoodItem>(() => randomFood(dino.type));
   const [step, setStep] = useState(0);
   const [feasting, setFeasting] = useState(false);
 
@@ -74,7 +85,9 @@ export default function GameBoard({
 
     if (journeyDoneRef.current) {
       journeyDoneRef.current = false;
-      setDino(randomDino());
+      // 한 끼 다 먹었으니 공룡이 조금 커지고, 다음엔 다른 음식을 찾아 떠난다
+      setRound((r) => r + 1);
+      setFood((prev) => randomFood(dino.type, prev.name));
       setStep(0);
     }
     setFeasting(false);
@@ -93,7 +106,7 @@ export default function GameBoard({
       if (sequenceRef.current !== token) return;
       void speakPhrase(q.lineParts);
     }, QUESTION_DELAY_MS);
-  }, [pool, choiceCount, mode]);
+  }, [pool, choiceCount, mode, dino.type]);
 
   useEffect(() => {
     unlockAudio();
@@ -108,7 +121,7 @@ export default function GameBoard({
   }, []);
 
   const celebrate = useCallback(
-    async (target: QuizItem, reachedGoal: boolean, currentDino: DinoInfo) => {
+    async (target: QuizItem, reachedGoal: boolean, currentFood: FoodItem) => {
       const token = ++sequenceRef.current;
       const stillActive = () => sequenceRef.current === token;
 
@@ -141,7 +154,7 @@ export default function GameBoard({
           setConfettiKey((k) => k + 1);
           await delay(900);
           if (!stillActive()) return;
-          await speak(currentDino.feastLine);
+          await speak(buildFeastLine(currentFood));
         }
       } finally {
         clearTimeout(fallback);
@@ -167,7 +180,7 @@ export default function GameBoard({
       setStep(nextStep);
       if (reachedGoal) journeyDoneRef.current = true;
 
-      void celebrate(question.target, reachedGoal, dino);
+      void celebrate(question.target, reachedGoal, food);
     } else {
       playWrong();
       setWrongDisplay(item.display);
@@ -207,7 +220,14 @@ export default function GameBoard({
           </div>
         </header>
 
-        <DinoTrack dino={dino} step={step} goal={JOURNEY_GOAL} feasting={feasting} />
+        <DinoTrack
+          dino={dino}
+          food={food}
+          step={step}
+          goal={JOURNEY_GOAL}
+          scale={dinoScale(round)}
+          feasting={feasting}
+        />
       </div>
 
       {celebrating && target ? (
@@ -229,14 +249,17 @@ export default function GameBoard({
             </div>
           )}
           <p className="font-jua text-2xl text-candy-yellow drop-shadow sm:text-3xl">
-            {feasting ? "냠냠! 맛있다! 🎉" : "따라해보세요!"}
+            {feasting ? `냠냠! ${food.name} 맛있다! 🎉` : "따라해보세요!"}
           </p>
         </section>
       ) : (
         <section className="relative z-10 flex w-full max-w-md flex-1 flex-col items-center justify-center gap-5 py-4">
           {/* 아기공룡이 말풍선으로 힌트 그림을 보여준다 (글자는 숨긴다) */}
           <div className="flex items-end justify-center gap-1">
-            <span className="animate-float text-6xl drop-shadow-lg sm:text-7xl">
+            <span
+              className="animate-float leading-none drop-shadow-lg"
+              style={{ fontSize: `${3.75 * dinoScale(round)}rem` }}
+            >
               {dino.emoji}
             </span>
             <div className="relative rounded-3xl rounded-bl-md bg-white/90 px-6 py-4 shadow-lg">
