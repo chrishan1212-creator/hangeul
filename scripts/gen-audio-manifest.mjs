@@ -15,6 +15,8 @@ import { fileURLToPath } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const audioDir = join(here, "..", "public", "audio");
 const outFile = join(here, "..", "src", "lib", "audioManifest.json");
+const musicDir = join(here, "..", "public", "music");
+const musicOutFile = join(here, "..", "src", "lib", "musicManifest.json");
 
 const AUDIO_EXTENSIONS = /\.(mp3|m4a|aac|wav|ogg|opus|webm)$/i;
 
@@ -46,4 +48,21 @@ console.log(
   count === 0
     ? "녹음 파일이 없습니다. 모두 기기 내장 목소리(TTS)로 읽어줍니다."
     : `녹음 파일 ${count}개를 찾았습니다.`
+);
+
+// public/music/ 의 배경음악 파일 목록도 함께 만든다.
+// 파일이 하나라도 있으면 그걸 틀고, 없으면 코드로 연주하는 음악을 쓴다.
+const tracks = [];
+if (existsSync(musicDir)) {
+  for (const file of readdirSync(musicDir).sort()) {
+    if (!AUDIO_EXTENSIONS.test(file)) continue;
+    tracks.push(`/music/${encodeURIComponent(file)}`);
+  }
+}
+
+writeFileSync(musicOutFile, `${JSON.stringify(tracks, null, 2)}\n`, "utf8");
+console.log(
+  tracks.length === 0
+    ? "배경음악 파일이 없습니다. 직접 연주하는 음악을 씁니다."
+    : `배경음악 파일 ${tracks.length}개를 찾았습니다.`
 );
