@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { syncBgm } from "@/lib/bgm";
 import { unlockAudio } from "@/lib/audioContext";
 import { playCorrect } from "@/lib/sfx";
-import { cancelSpeech, primeSpeech, speak } from "@/lib/speech";
+import { cancelSpeech, hasKoreanVoice, primeSpeech, speak } from "@/lib/speech";
 import { updateSettings, useSettings } from "@/lib/settings";
 
 interface ToggleRowProps {
@@ -47,9 +47,21 @@ export default function SettingsButton() {
   const [mounted, setMounted] = useState(false);
   const settings = useSettings();
 
+  const [koreanVoiceMissing, setKoreanVoiceMissing] = useState(false);
+
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // 설정 창을 열 때마다 한국어 목소리가 있는지 확인한다
+  // (목록이 늦게 채워지는 기기가 있어서 열 때 다시 본다)
+  useEffect(() => {
+    if (!open) return;
+    const check = () => setKoreanVoiceMissing(!hasKoreanVoice());
+    check();
+    const timer = setTimeout(check, 1200);
+    return () => clearTimeout(timer);
+  }, [open]);
 
   // 설정이 바뀌면 배경음악을 바로 반영한다
   useEffect(() => {
@@ -166,6 +178,19 @@ export default function SettingsButton() {
                 on={settings.voice}
                 onChange={(next) => updateSettings({ voice: next })}
               />
+
+              {koreanVoiceMissing && (
+                <div className="rounded-2xl bg-amber-50 px-4 py-3">
+                  <p className="font-jua text-base text-amber-800">
+                    ⚠️ 한국어 목소리가 없어요
+                  </p>
+                  <p className="mt-1 font-jua text-xs text-amber-700">
+                    안드로이드라면 <b>설정 → 접근성 → 화면 낭독기 → 텍스트 음성 변환</b>
+                    에서 한국어 음성을 내려받아 주세요. 그 전까지는 읽어주기가 나오지 않지만,
+                    음악과 효과음은 정상입니다.
+                  </p>
+                </div>
+              )}
 
               <div className="rounded-2xl bg-white/85 px-4 py-3">
                 <p className="font-jua text-base text-slate-700">🎧 소리 테스트</p>

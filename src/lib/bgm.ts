@@ -27,6 +27,34 @@ let duckDepth = 0;
 let audioEl: HTMLAudioElement | null = null;
 let playlist: string[] = [];
 let trackIndex = 0;
+let positionTimer: number | null = null;
+
+/** 페이지가 통째로 새로 열려도 듣던 위치에서 이어지도록 저장해둔다 */
+const POSITION_KEY = "hangeul-bgm-position";
+
+function savePosition(): void {
+  if (!audioEl) return;
+  try {
+    window.sessionStorage.setItem(
+      POSITION_KEY,
+      JSON.stringify({ track: trackIndex, time: audioEl.currentTime })
+    );
+  } catch {
+    // 저장이 안 돼도 재생에는 지장이 없다
+  }
+}
+
+function loadPosition(): { track: number; time: number } | null {
+  try {
+    const raw = window.sessionStorage.getItem(POSITION_KEY);
+    if (!raw) return null;
+    const saved = JSON.parse(raw);
+    if (typeof saved?.time !== "number" || typeof saved?.track !== "number") return null;
+    return saved;
+  } catch {
+    return null;
+  }
+}
 
 // ── 직접 연주용 ──────────────────────────────────────────────────
 const TEMPO_BPM = 80;
@@ -78,39 +106,80 @@ function shuffled<T>(items: T[]): T[] {
   return copy;
 }
 
-function playCurrentTrack(): void {
+/**
+ * 곡을 바꿔 끼운다. **src 를 다시 지정하면 처음부터 재생되므로**
+ * 정말 다른 곡으로 넘어갈 때만 부른다.
+ */
+function loadTrack(index: number, startAt = 0): void {
   if (!audioEl) return;
+  trackIndex = index;
   audioEl.src = playlist[trackIndex];
   // 곡이 하나뿐이면 이어서 반복, 여러 곡이면 끝날 때 다음 곡으로 넘어간다
   audioEl.loop = playlist.length === 1;
-  applyVolume();
-  void audioEl.play().catch(() => {
-    // 아직 재생 권한이 없으면 조용히 넘어간다 (다음 터치 때 다시 시도된다)
-  });
+
+  if (startAt > 0) {
+    const seek = () => {
+      try {
+        if (audioEl) audioEl.currentTime = startAt;
+      } catch {
+        // 위치를 못 옮기면 그냥 처음부터 듣는다
+      }
+    };
+    audioEl.addEventListener("loadedmetadata", seek, { once: true });
+  }
 }
 
 function handleTrackEnded(): void {
-  if (!running || playlist.length <= 1) return;
-  trackIndex = (trackIndex + 1) % playlist.length;
-  playCurrentTrack();
+  if (playlist.length <= 1) return;
+  loadTrack((trackIndex + 1) % playlist.length);
+  if (running) void audioEl?.play().catch(() => {});
+}
+
+/**
+ * 음악 파일을 미리 준비해둔다. 재생은 하지 않으므로 터치 전에도 부를 수 있고,
+ * 미리 받아두기 때문에 첫 터치에 곧바로 소리가 난다.
+ */
+export function prepareBgm(): void {
+  if (typeof window === "undefined") return;
+  if (TRACKS.length === 0 || audioEl) return;
+
+  playlist = shuffled(TRACKS);
+
+  audioEl = new Audio();
+  audioEl.preload = "auto";
+  audioEl.addEventListener("ended", handleTrackEnded);
+
+  // 페이지가 통째로 새로 열렸어도 듣던 자리에서 이어지게 한다
+  const saved = loadPosition();
+  const index = saved && saved.track < playlist.length ? saved.track : 0;
+  loadTrack(index, saved?.time ?? 0);
+
+  applyVolume();
+  audioEl.load();
 }
 
 function startFileBgm(): void {
+  // 파일을 미리 받아두는 것은 터치 전에도 할 수 있다
+  prepareBgm();
+  if (!audioEl) return;
+
+  // 재생은 사용자가 화면을 만진 뒤에만 가능하다. 그 전에 play() 를 부르면
+  // 브라우저가 거부하는데, 그때 running 을 켜버리면 정작 첫 터치 때
+  // "이미 재생 중"으로 보여 재시도가 무시된다.
   if (!isAudioUnlocked()) return;
 
-  if (!audioEl) {
-    audioEl = new Audio();
-    audioEl.preload = "auto";
-    audioEl.addEventListener("ended", handleTrackEnded);
-  }
-
-  if (playlist.length === 0) {
-    playlist = shuffled(TRACKS);
-    trackIndex = 0;
-  }
-
   running = true;
-  playCurrentTrack();
+  applyVolume();
+
+  // src 를 다시 지정하지 않는다. 그래야 화면을 옮겨다녀도 이어서 재생된다.
+  void audioEl.play().catch(() => {
+    // 재생이 거부되면 다음 기회에 다시 시도할 수 있도록 표시를 되돌린다
+    running = false;
+  });
+
+  if (positionTimer === null) {
+    positionTimer = window.setInterval(savePosition, 2000);
+  }
 }
 
 // ── 직접 연주 ────────────────────────────────────────────────────
@@ -214,7 +283,13 @@ export function stopBgm(): void {
     window.clearInterval(schedulerTimer);
     schedulerTimer = null;
   }
+  if (positionTimer !== null) {
+    window.clearInterval(positionTimer);
+    positionTimer = null;
+  }
   if (audioEl) {
+    // pause 만 한다. 위치는 그대로 두어 다시 켤 때 이어서 재생된다.
+    savePosition();
     audioEl.pause();
   }
   applyVolume();
@@ -243,4 +318,9 @@ export function duckBgm(on: boolean): void {
 
 export function isBgmRunning(): boolean {
   return running;
+}
+
+/** 페이지를 떠나기 직전 등에 듣던 위치를 저장한다 */
+export function saveBgmPosition(): void {
+  savePosition();
 }

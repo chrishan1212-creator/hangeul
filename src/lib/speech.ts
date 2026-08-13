@@ -29,6 +29,44 @@ function isIOS(): boolean {
 let cachedVoice: SpeechSynthesisVoice | null = null;
 
 /**
+ * 안드로이드 크롬은 목소리 목록을 **비동기로** 불러온다. 목록이 비어 있는
+ * 상태에서 말하려고 하면 아무 소리도 나지 않는 경우가 있어서, 목록이 찰
+ * 때까지 잠깐 기다렸다가 말한다. (이미 차 있으면 곧바로 진행한다)
+ */
+function waitForVoices(timeoutMs = 1500): Promise<void> {
+  return new Promise((resolve) => {
+    if (!isSpeechAvailable()) {
+      resolve();
+      return;
+    }
+    if (window.speechSynthesis.getVoices().length > 0) {
+      resolve();
+      return;
+    }
+
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      window.speechSynthesis.removeEventListener("voiceschanged", finish);
+      resolve();
+    };
+
+    const timer = setTimeout(finish, timeoutMs);
+    window.speechSynthesis.addEventListener("voiceschanged", finish);
+  });
+}
+
+/** 기기에 한국어 목소리가 하나라도 깔려 있는지 */
+export function hasKoreanVoice(): boolean {
+  if (!isSpeechAvailable()) return false;
+  return window.speechSynthesis
+    .getVoices()
+    .some((voice) => voice.lang?.toLowerCase().startsWith("ko"));
+}
+
+/**
  * 한국어 목소리를 고른다.
  *
  * ⚠️ iOS(Safari)에서는 utterance.voice 를 직접 지정하면 아무 소리도 나지 않는
@@ -143,7 +181,13 @@ const START_WATCHDOG_MS = 800;
  * 2) 지정한 목소리 때문에 재생이 실패하면, 목소리 지정 없이 자동으로 재시도한다.
  * 3) onend 가 아예 오지 않는 기기가 있어서, 시간이 지나면 강제로 resolve 한다.
  */
-function speakWithTts(
+async function speakWithTts(text: string, options: SpeakOptions = {}): Promise<void> {
+  // 안드로이드는 목소리 목록이 늦게 오는데, 그 전에 말하면 소리가 안 난다
+  await waitForVoices();
+  return speakNowWithTts(text, options);
+}
+
+function speakNowWithTts(
   text: string,
   { rate = 0.9, pitch = 1.15 }: SpeakOptions = {}
 ): Promise<void> {
