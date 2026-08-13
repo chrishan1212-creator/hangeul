@@ -2,12 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export type RecognitionStatus =
-  | "idle"
-  | "listening"
-  | "processing"
-  | "error"
-  | "unsupported";
+export type RecognitionStatus = "idle" | "listening" | "error" | "unsupported";
 
 interface UseSpeechRecognitionOptions {
   lang?: string;
@@ -23,10 +18,20 @@ interface UseSpeechRecognitionReturn {
   stop: () => void;
 }
 
+function getSpeechRecognitionCtor(): any {
+  if (typeof window === "undefined") return null;
+  return (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition || null;
+}
+
 /**
  * Web Speech API(SpeechRecognition)를 감싸는 훅.
  * 브라우저가 지원하지 않으면 isSupported=false 를 반환한다.
- * Chrome / Edge / Safari(일부)에서 동작하며, Firefox는 미지원일 수 있다.
+ * Chrome / Edge / 안드로이드 Chrome에서 가장 안정적으로 동작한다.
+ *
+ * 주의: 같은 SpeechRecognition 인스턴스를 여러 번 start()/stop()으로 재사용하면
+ * 몇 번 사용한 뒤부터 인식 결과가 한 글자씩만 잘려서 나오는 브라우저 버그가 있다
+ * (특히 Chrome 계열). 그래서 이 훅은 말하기 버튼을 누를 때마다 완전히 새로운
+ * SpeechRecognition 인스턴스를 만들어서 사용한다.
  */
 export function useSpeechRecognition({
   lang = "ko-KR",
@@ -40,23 +45,39 @@ export function useSpeechRecognition({
   const recognitionRef = useRef<any>(null);
   const onResultRef = useRef(onResult);
   onResultRef.current = onResult;
+  const langRef = useRef(lang);
+  langRef.current = lang;
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const SpeechRecognitionCtor =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
+    const ctor = getSpeechRecognitionCtor();
+    setIsSupported(!!ctor);
+    if (!ctor) setStatus("unsupported");
+  }, []);
 
-    if (!SpeechRecognitionCtor) {
-      setIsSupported(false);
-      setStatus("unsupported");
-      return;
+  const destroyCurrent = useCallback(() => {
+    const recognition = recognitionRef.current;
+    if (!recognition) return;
+    recognition.onstart = null;
+    recognition.onresult = null;
+    recognition.onerror = null;
+    recognition.onend = null;
+    try {
+      recognition.abort();
+    } catch {
+      // ignore
     }
+    recognitionRef.current = null;
+  }, []);
 
-    setIsSupported(true);
+  const start = useCallback(() => {
+    const ctor = getSpeechRecognitionCtor();
+    if (!ctor) return;
 
-    const recognition = new SpeechRecognitionCtor();
-    recognition.lang = lang;
+    // 이전 세션이 남아있다면 완전히 정리하고 새로 만든다.
+    destroyCurrent();
+
+    const recognition = new ctor();
+    recognition.lang = langRef.current;
     recognition.continuous = false;
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
@@ -105,38 +126,20 @@ export function useSpeechRecognition({
     recognition.onend = () => {
       setStatus((prev) => (prev === "listening" ? "idle" : prev));
       setInterimTranscript("");
+      // 이 세션은 끝났으니 다음 start()가 새 인스턴스를 만들도록 참조를 비운다.
+      if (recognitionRef.current === recognition) {
+        recognitionRef.current = null;
+      }
     };
 
     recognitionRef.current = recognition;
-
-    return () => {
-      recognition.onstart = null;
-      recognition.onresult = null;
-      recognition.onerror = null;
-      recognition.onend = null;
-      try {
-        recognition.stop();
-      } catch {
-        // ignore
-      }
-    };
-  }, [lang]);
-
-  const start = useCallback(() => {
-    if (!recognitionRef.current) return;
+    setErrorMessage(null);
     try {
-      setErrorMessage(null);
-      recognitionRef.current.start();
+      recognition.start();
     } catch {
-      // start() throws if already started - restart cleanly
-      try {
-        recognitionRef.current.stop();
-        recognitionRef.current.start();
-      } catch {
-        // ignore
-      }
+      // 아주 드물게 start() 직후 재호출 시 발생하는 레이스 컨디션 - 무시
     }
-  }, []);
+  }, [destroyCurrent]);
 
   const stop = useCallback(() => {
     if (!recognitionRef.current) return;
@@ -146,6 +149,12 @@ export function useSpeechRecognition({
       // ignore
     }
   }, []);
+
+  useEffect(() => {
+    return () => {
+      destroyCurrent();
+    };
+  }, [destroyCurrent]);
 
   return { status, interimTranscript, errorMessage, isSupported, start, stop };
 }
