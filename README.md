@@ -1,10 +1,36 @@
-# 🐥 한글 말하기 놀이 (Hangeul Speech Play)
+# 🐥 한글 놀이터 (Hangeul Playground)
 
-아이를 위한 한글 음성 인식 학습 PWA예요. 마이크 버튼을 누르고 한글 단어를 말하면,
-Web Speech API로 인식한 단어를 큰 글씨와 어울리는 이모지로 화면 중앙에 보여줍니다.
-(예: "사과"라고 말하면 🍎 + **사과** 가 크게 나타나요!)
+아이를 위한 한글 학습 PWA예요. 두 가지 놀이가 들어있습니다.
 
-## ✨ 주요 기능
+| 놀이 | 경로 | 설명 |
+| --- | --- | --- |
+| 🎤 말하기 놀이 | `/speak` | 말하면 인식한 단어를 큰 글씨 + 이모지로 보여줘요 (예: "사과" → 🍎 **사과**) |
+| 🎮 찾기 게임 | `/game` | 소리를 듣고 맞는 글자를 골라요 (예: "배는 어디 있을까요?") |
+
+## 🎮 찾기 게임 (소리 ↔ 글자 매칭)
+
+문제를 소리로 들려주면 아이가 화면의 글자 카드 중 맞는 것을 고르는 놀이예요.
+맞히면 팡파레(딩동댕동)와 색종이가 터지고, 글자를 크게 보여주면서 읽어준 뒤
+"따라해보세요"라고 한 번 더 들려줍니다. 그다음 **다음 ➡️** 버튼으로 이어서 풀어요.
+틀려도 혼내지 않고 부드러운 소리와 함께 다시 고를 수 있어요.
+
+**4가지 모드**
+
+- **한 글자** — 새, 밤, 손, 배, 떡, 똥 …
+- **두 글자** — 사자, 악어, 얼굴, 사과 … (50개 이상)
+- **자음** — "기역을 찾아보세요" → ㄱ ㄴ ㄷ ㄹ 중에서 고르기 (14개)
+- **모음** — "야를 찾아보세요" → ㅏ ㅑ ㅓ ㅕ 중에서 고르기 (12개)
+
+**난이도 조절**
+
+- **받침 있는 글자 넣기** (한 글자 모드) — 끄면 받침 없는 쉬운 글자(개·새·배·소…)만,
+  켜면 받침 있는 글자(밤·손·발·꽃…)까지 함께 나와요
+- **고르는 개수** — 2 / 3 / 4개 중 선택. 적을수록 쉬워요
+
+문제의 정답은 **소리로만** 알려주고 화면에는 적지 않아요 (읽을 줄 아는 아이가
+글자만 보고 맞히지 않도록). 못 들었으면 **🔁 다시 듣기** 버튼을 누르면 돼요.
+
+## ✨ 말하기 놀이 기능
 
 - 🎤 **자유 음성 인식** — Web Speech API(`SpeechRecognition`)로 한국어(`ko-KR`) 음성을 실시간 인식
 - ⌨️ **타이핑 입력도 가능** — 마이크가 지원되지 않는 환경이거나, 그냥 글자로 입력하고 싶을 때를 위한
@@ -24,6 +50,7 @@ Web Speech API로 인식한 단어를 큰 글씨와 어울리는 이모지로 �
 - [Tailwind CSS](https://tailwindcss.com/)
 - 브라우저 내장 [Web Speech API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API)
   (`SpeechRecognition`, `SpeechSynthesis`) — 별도 서버/과금 없이 브라우저에서 바로 동작
+- 효과음은 오디오 파일 없이 **Web Audio API**로 직접 합성 (로딩 없고 오프라인에서도 동작)
 - 커스텀 Service Worker 기반 PWA (오프라인 앱 셸 캐싱)
 
 ## 🚀 시작하기
@@ -70,30 +97,43 @@ vercel
 ```
 src/
   app/
-    layout.tsx        # 폰트, 메타데이터, PWA manifest 연결
-    page.tsx           # 메인 화면 (마이크 버튼 + 단어/이모지 표시)
+    layout.tsx           # 폰트, 메타데이터, PWA manifest 연결
+    page.tsx             # 홈 (놀이 고르기)
+    speak/page.tsx       # 🎤 말하기 놀이
+    game/page.tsx        # 🎮 찾기 게임 (모드 선택 + 난이도)
     globals.css
   components/
-    MicButton.tsx       # 마이크 버튼 (듣는 중 애니메이션 포함)
-    WordDisplay.tsx      # 큰 글씨 + 이모지 표시 영역
-    RecentWords.tsx       # 최근에 맞힌 단어 칩 목록
-    Confetti.tsx           # 정답 시 색종이 효과
+    PlayShell.tsx           # 공통 배경 레이아웃
+    MicButton.tsx           # 마이크 버튼 (듣는 중 애니메이션 포함)
+    WordDisplay.tsx         # 큰 글씨 + 이모지 표시 영역
+    TypingInput.tsx         # 타이핑 입력창
+    RecentWords.tsx         # 최근에 맞힌 단어 칩 목록
+    Confetti.tsx            # 정답 시 색종이 효과
     FloatingBackground.tsx  # 배경에 떠다니는 이모지 장식
-    ServiceWorkerRegister.tsx # 서비스워커 등록
+    ServiceWorkerRegister.tsx
+    game/
+      GameBoard.tsx         # 게임 진행 (출제 → 정답 → 축하 → 다음)
+      ChoiceTile.tsx        # 고르는 글자 카드
   hooks/
     useSpeechRecognition.ts # Web Speech API 래퍼 훅
   lib/
     wordEmojiMap.ts    # 한글 단어 → 이모지 사전 + 매칭 로직
+    gameData.ts        # 게임 문제 풀 + 문제 생성
+    korean.ts          # 받침 판별, 은/는 · 을/를 조사 처리
+    speech.ts          # TTS(읽어주기) 래퍼
+    sfx.ts             # 팡파레 / 오답 효과음 (Web Audio)
 public/
   manifest.json        # PWA manifest
   sw.js                # 서비스워커 (오프라인 캐싱)
   icons/                # 앱 아이콘 (any / maskable)
 ```
 
-## 🈶 단어 사전에 새 단어 추가하기
+## 🈶 내용 추가하기
 
-`src/lib/wordEmojiMap.ts` 의 `WORD_EMOJI_MAP` 객체에 `"단어": "이모지"` 형태로
-한 줄만 추가하면 바로 인식됩니다.
+- **말하기 놀이 단어**: `src/lib/wordEmojiMap.ts` 의 `WORD_EMOJI_MAP` 에
+  `"단어": "이모지"` 한 줄 추가
+- **게임 문제**: `src/lib/gameData.ts` 의 각 배열(`SYLLABLES_NO_BATCHIM`,
+  `SYLLABLES_BATCHIM`, `WORDS_TWO` 등)에 `{ display, spoken, emoji }` 항목 추가
 
 ## 🔒 개인정보
 

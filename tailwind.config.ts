@@ -1,10 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  content: [
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
+  content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
       fontFamily: {
@@ -48,6 +45,13 @@ const config: Config = {
           "0%, 100%": { backgroundPosition: "0% 50%" },
           "50%": { backgroundPosition: "100% 50%" },
         },
+        shake: {
+          "0%, 100%": { transform: "translateX(0)" },
+          "20%": { transform: "translateX(-10px)" },
+          "40%": { transform: "translateX(10px)" },
+          "60%": { transform: "translateX(-6px)" },
+          "80%": { transform: "translateX(6px)" },
+        },
       },
       animation: {
         "pop-in": "pop-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both",
@@ -56,6 +60,7 @@ const config: Config = {
         wiggle: "wiggle 0.7s ease-in-out infinite",
         "confetti-fall": "confetti-fall linear forwards",
         "gradient-move": "gradient-move 12s ease infinite",
+        shake: "shake 0.45s ease-in-out",
       },
     },
   },
