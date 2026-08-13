@@ -21,11 +21,14 @@ export interface FoodItem {
 /** 몇 문제를 맞히면 음식에 도착하는지 */
 export const JOURNEY_GOAL = 3;
 
-/** 한 번 먹을 때마다 이만큼씩 커진다 */
-const GROWTH_PER_MEAL = 0.28;
+/**
+ * 성장 단계별 크기. 아기 → 어린이 → 다 자란 모습 순으로,
+ * 한눈에 "우와 커졌다!" 하고 알아볼 수 있게 차이를 크게 뒀다.
+ */
+const GROWTH_SCALES = [1, 1.55, 2.2];
 
-/** 이만큼 자라고 나면 다른 친구로 바뀐다 (0 → 1 → 2 → 3 단계) */
-export const MAX_GROWTH_ROUND = 3;
+/** 이만큼 자라고 나면(마지막 단계) 다음 끼니부터 다른 친구가 온다 */
+export const MAX_GROWTH_ROUND = GROWTH_SCALES.length - 1;
 
 const ANIMALS: AnimalInfo[] = [
   { emoji: "🦕", name: "브라키오", diet: "herbivore" },
@@ -130,5 +133,5 @@ export function buildGreetingLine(animal: AnimalInfo): string {
 
 /** 밥을 몇 번 먹었는지(round)에 따라 친구가 얼마나 자랐는지 */
 export function animalScale(round: number): number {
-  return 1 + Math.min(round, MAX_GROWTH_ROUND) * GROWTH_PER_MEAL;
+  return GROWTH_SCALES[Math.min(round, MAX_GROWTH_ROUND)];
 }

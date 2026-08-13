@@ -12,8 +12,8 @@ interface AnimalTrackProps {
   feasting: boolean;
 }
 
-/** 기본 크기(rem). 여기에 scale 을 곱해서 점점 커지게 한다. */
-const BASE_REM = 2.25;
+/** 아기 때 크기(rem). 여기에 scale 을 곱해서 점점 커지게 한다. */
+const BASE_REM = 2;
 
 /**
  * 화면 위쪽에서 동물 친구가 음식을 향해 조금씩 걸어간다.
@@ -34,7 +34,7 @@ export default function AnimalTrack({
 
   return (
     <div className="relative z-10 w-full max-w-md pt-2">
-      <div className="relative h-16">
+      <div className="relative h-24">
         {/* 걸어가는 길 */}
         <div className="absolute inset-x-0 bottom-1 h-2.5 rounded-full bg-white/30" />
         <div

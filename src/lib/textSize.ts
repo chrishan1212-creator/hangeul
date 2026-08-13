@@ -20,18 +20,28 @@ interface FillOptions {
   maxVw?: number;
   /** 큰 화면에서 글씨가 한없이 커지지 않도록 하는 상한선 (rem 기준) */
   maxWidthRem?: number;
+  /**
+   * 화면 높이 기준 상한 (dvh). 글씨가 세로로 너무 커지면 아래 버튼이
+   * 화면 밖으로 밀려나므로, 화면 높이에 비해서도 커지지 않게 막는다.
+   * dvh 를 쓰는 이유는 주소창이 접혔다 펴지는 모바일에서도 실제 보이는
+   * 높이를 기준으로 삼기 위해서다.
+   */
+  maxDvh?: number;
 }
 
 export function fillWidthFontSize(
   text: string,
-  { usableWidthVw = 87, maxVw = 95, maxWidthRem = 24.7 }: FillOptions = {}
+  { usableWidthVw = 87, maxVw = 95, maxWidthRem = 24.7, maxDvh }: FillOptions = {}
 ): string {
   const count = Math.max(1, [...text].length);
 
   const vw = clamp(usableWidthVw / GLYPH_WIDTH_RATIO / count, 7, maxVw);
   const remCap = clamp(maxWidthRem / GLYPH_WIDTH_RATIO / count, 2, maxWidthRem / GLYPH_WIDTH_RATIO);
 
-  return `min(${round(vw)}vw, ${round(remCap)}rem)`;
+  const limits = [`${round(vw)}vw`, `${round(remCap)}rem`];
+  if (maxDvh) limits.push(`${round(maxDvh)}dvh`);
+
+  return `min(${limits.join(", ")})`;
 }
 
 function clamp(value: number, min: number, max: number): number {

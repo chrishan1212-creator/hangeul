@@ -232,7 +232,7 @@ export default function GameBoard({
     <>
       <Confetti triggerKey={confettiKey} />
 
-      <div className="relative z-10 flex w-full max-w-md flex-col items-center gap-1">
+      <div className="relative z-10 flex w-full max-w-md shrink-0 flex-col items-center gap-1">
         <header className="flex w-full items-center justify-between">
           <button
             type="button"
@@ -261,15 +261,18 @@ export default function GameBoard({
       </div>
 
       {celebrating && target ? (
-        <section className="relative z-20 flex w-full max-w-md flex-1 flex-col items-center justify-center gap-2 py-4 text-center">
+        <section className="relative z-20 flex w-full max-w-md min-h-0 flex-1 flex-col items-center justify-center gap-2 py-2 text-center">
           {target.emoji && (
-            <div className="animate-pop-in text-[4rem] leading-none drop-shadow-xl sm:text-[5rem]">
+            <div className="animate-pop-in text-[3.25rem] leading-none drop-shadow-xl sm:text-[4rem]">
               {target.emoji}
             </div>
           )}
           <div
             className="animate-pop-in font-jua text-white drop-shadow-[0_5px_0_rgba(0,0,0,0.25)]"
-            style={{ fontSize: fillWidthFontSize(target.display), lineHeight: 1.15 }}
+            style={{
+              fontSize: fillWidthFontSize(target.display, { maxDvh: 34 }),
+              lineHeight: 1.1,
+            }}
           >
             {target.display}
           </div>
@@ -283,12 +286,12 @@ export default function GameBoard({
           </p>
         </section>
       ) : (
-        <section className="relative z-10 flex w-full max-w-md flex-1 flex-col items-center justify-center gap-5 py-4">
+        <section className="relative z-10 flex w-full max-w-md min-h-0 flex-1 flex-col items-center justify-center gap-5 py-2">
           {/* 아기공룡이 말풍선으로 힌트 그림을 보여준다 (글자는 숨긴다) */}
           <div className="flex items-end justify-center gap-1">
             <span
               className="animate-float leading-none drop-shadow-lg"
-              style={{ fontSize: `${3.75 * animalScale(round)}rem` }}
+              style={{ fontSize: `${3 * animalScale(round)}rem` }}
             >
               {animal.emoji}
             </span>
@@ -305,7 +308,14 @@ export default function GameBoard({
             🔁 다시 듣기
           </button>
 
-          <div className="grid w-full grid-cols-2 gap-3">
+          <div
+            className="grid w-full min-h-0 flex-1 gap-3"
+            style={{
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              gridTemplateRows: `repeat(${Math.ceil(choiceCount / 2)}, minmax(0, 1fr))`,
+              maxHeight: "58dvh",
+            }}
+          >
             {question?.choices.map((choice) => (
               <ChoiceTile
                 key={choice.display}
@@ -319,7 +329,12 @@ export default function GameBoard({
         </section>
       )}
 
-      <footer className="relative z-20 flex w-full max-w-md flex-col items-center gap-3 pb-2">
+      {/* 축하할 때만 자리를 차지한다. 문제 화면에서는 그만큼 카드에 자리를 내준다. */}
+      <footer
+        className={`relative z-20 flex w-full max-w-md shrink-0 flex-col items-center justify-center ${
+          celebrating ? "h-20" : "h-0"
+        }`}
+      >
         {celebrating && showNext && (
           <button
             type="button"

@@ -16,7 +16,7 @@ export default function ChoiceTile({ label, wrong, disabled, onClick }: ChoiceTi
       disabled={disabled}
       aria-label={`${label} 고르기`}
       className={`
-        flex aspect-square w-full items-center justify-center rounded-3xl bg-white/95
+        flex aspect-square h-full max-w-full justify-self-center items-center justify-center rounded-3xl bg-white/95
         font-jua text-slate-700 shadow-[0_8px_0_rgba(0,0,0,0.15)]
         text-6xl transition-transform duration-150
         active:translate-y-1.5 active:shadow-[0_3px_0_rgba(0,0,0,0.15)]
