@@ -4,10 +4,13 @@
   "private": true,
   "description": "아이를 위한 한글 말하기 놀이 - Web Speech API 기반 한글 학습 PWA",
   "scripts": {
-    "dev": "next dev",
+    "dev": "npm run audio:manifest && next dev",
+    "prebuild": "npm run audio:manifest",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "audio:manifest": "node scripts/gen-audio-manifest.mjs",
+    "audio:list": "node scripts/list-audio.mjs"
   },
   "dependencies": {
     "next": "14.2.35",

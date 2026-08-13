@@ -181,12 +181,23 @@ export function getPool(mode: GameMode, includeBatchim: boolean): QuizItem[] {
   }
 }
 
-/** 소리로 들려줄 질문 문장을 만든다 */
-export function buildPrompt(mode: GameMode, item: QuizItem): string {
+/**
+ * 소리로 들려줄 질문을 [단어, 뒷부분] 두 조각으로 만든다.
+ *
+ * 두 조각으로 나누는 이유: 직접 녹음한 목소리를 쓸 때 단어 하나하나와
+ * 뒷부분 4가지만 녹음하면 되기 때문이다 (문장을 통째로 다 녹음할 필요가 없다).
+ * 녹음이 없으면 두 조각을 합쳐서 TTS가 한 문장으로 읽는다.
+ */
+export function buildPromptParts(mode: GameMode, item: QuizItem): [string, string] {
   if (mode === "consonant" || mode === "vowel") {
-    return `${item.spoken}${objectParticle(item.spoken)} 찾아보세요`;
+    return [item.spoken, `${objectParticle(item.spoken)} 찾아보세요`];
   }
-  return `${item.spoken}${topicParticle(item.spoken)} 어디 있을까요?`;
+  return [item.spoken, `${topicParticle(item.spoken)} 어디 있을까요?`];
+}
+
+/** 질문 전체 문장 (화면 표시나 디버깅용) */
+export function buildPrompt(mode: GameMode, item: QuizItem): string {
+  return buildPromptParts(mode, item).join("");
 }
 
 export interface Question {

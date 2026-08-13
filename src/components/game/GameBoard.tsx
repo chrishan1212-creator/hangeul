@@ -7,12 +7,12 @@ import {
   GameMode,
   Question,
   QuizItem,
-  buildPrompt,
+  buildPromptParts,
   getPool,
   makeQuestion,
 } from "@/lib/gameData";
 import { playCorrect, playWrong, unlockAudio } from "@/lib/sfx";
-import { cancelSpeech, delay, speak } from "@/lib/speech";
+import { cancelSpeech, delay, speak, speakPhrase } from "@/lib/speech";
 import { fillWidthFontSize } from "@/lib/textSize";
 
 interface GameBoardProps {
@@ -57,7 +57,7 @@ export default function GameBoard({
   const askNow = useCallback(
     (q: Question) => {
       cancelSpeech();
-      void speak(buildPrompt(mode, q.target));
+      void speakPhrase(buildPromptParts(mode, q.target));
     },
     [mode]
   );
@@ -76,7 +76,7 @@ export default function GameBoard({
     // 화면이 먼저 뜨고 잠깐 뒤에 질문이 나오도록 한 박자 쉰다
     setTimeout(() => {
       if (sequenceRef.current !== token) return;
-      void speak(buildPrompt(mode, q.target));
+      void speakPhrase(buildPromptParts(mode, q.target));
     }, QUESTION_DELAY_MS);
   }, [pool, choiceCount, mode]);
 

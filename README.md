@@ -120,13 +120,46 @@ src/
     wordEmojiMap.ts    # 한글 단어 → 이모지 사전 + 매칭 로직
     gameData.ts        # 게임 문제 풀 + 문제 생성
     korean.ts          # 받침 판별, 은/는 · 을/를 조사 처리
-    speech.ts          # TTS(읽어주기) 래퍼
+    speech.ts          # 읽어주기 (녹음 파일 우선, 없으면 TTS)
+    audioClips.ts      # 녹음 파일 찾기 / 재생
+    audioManifest.json # 녹음 파일 목록 (빌드 시 자동 생성)
     sfx.ts             # 팡파레 / 오답 효과음 (Web Audio)
+    textSize.ts        # 글자 수에 맞춘 글씨 크기 계산
+scripts/
+  gen-audio-manifest.mjs  # public/audio/ 를 훑어 목록 생성 (prebuild에서 자동 실행)
+  list-audio.mjs          # 녹음해야 할 파일 목록 출력 (npm run audio:list)
 public/
   manifest.json        # PWA manifest
   sw.js                # 서비스워커 (오프라인 캐싱)
-  icons/                # 앱 아이콘 (any / maskable)
+  icons/               # 앱 아이콘 (any / maskable)
+  audio/               # 직접 녹음한 목소리를 넣는 곳 (비어 있으면 TTS 사용)
 ```
+
+## 🎙️ 목소리 바꾸기 (직접 녹음 넣기)
+
+기본은 기기에 내장된 한국어 TTS로 읽어줍니다. 조금 더 자연스럽게 하려면:
+
+**① 기기의 향상된 음성 쓰기 (무료, 가장 간단)**
+아이폰 기준 `설정 → 손쉬운 사용 → 음성 콘텐츠 → 음성 → 한국어` 에서
+"향상됨/프리미엄" 음성을 내려받으면 앱이 자동으로 그 목소리를 씁니다.
+(코드에서 Enhanced/Premium 음성을 우선 선택하도록 되어 있습니다)
+
+**② 직접 녹음한 목소리 넣기 (무료)**
+`public/audio/` 에 녹음 파일을 넣기만 하면 그 파일을 재생합니다.
+
+```bash
+npm run audio:list   # 어떤 파일이 필요한지 목록 출력
+```
+
+목록에 나온 이름 그대로(`사과.mp3`, `따라해보세요.mp3` …) `public/audio/` 에
+저장하고 push하면 끝입니다. 빌드할 때 목록을 자동으로 다시 읽으므로 코드는
+고칠 필요가 없어요. 자세한 내용은 [`public/audio/README.md`](public/audio/README.md).
+
+- 일부만 녹음해도 되고, 없는 것은 TTS가 읽습니다
+- 질문은 `단어` + `뒷부분` 두 조각을 이어 붙여 들려주므로, 단어 하나만 녹음하면
+  모든 문장에 재사용됩니다 (문장을 통째로 녹음할 필요 없음)
+- 한 문장 안에서 사람 목소리와 기계 목소리가 섞이지 않도록, 조각이 **모두**
+  녹음돼 있을 때만 녹음을 씁니다
 
 ## 🈶 내용 추가하기
 

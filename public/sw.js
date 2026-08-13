@@ -1,4 +1,4 @@
-const CACHE_NAME = "hangeul-play-v1";
+const CACHE_NAME = "hangeul-play-v2";
 const APP_SHELL = [
   "/",
   "/manifest.json",
@@ -40,14 +40,24 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // 오디오는 브라우저가 구간 요청(Range)으로 가져와 206 응답이 오는데,
+  // 206 응답은 캐시에 넣을 수 없으므로 캐시를 건드리지 않고 그대로 흘려보낸다.
+  if (request.headers.has("range")) return;
+
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached;
       return fetch(request)
         .then((response) => {
-          if (response.ok && request.url.startsWith(self.location.origin)) {
+          // status 200 인 완전한 응답만 캐시할 수 있다 (206 등 부분 응답은 제외)
+          if (response.status === 200 && request.url.startsWith(self.location.origin)) {
             const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+            caches
+              .open(CACHE_NAME)
+              .then((cache) => cache.put(request, clone))
+              .catch(() => {
+                // 캐시에 못 넣어도 재생 자체에는 문제가 없으므로 무시한다
+              });
           }
           return response;
         })
