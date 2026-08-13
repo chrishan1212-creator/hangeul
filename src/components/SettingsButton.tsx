@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { syncBgm } from "@/lib/bgm";
 import { unlockAudio } from "@/lib/audioContext";
+import { playCorrect } from "@/lib/sfx";
+import { cancelSpeech, primeSpeech, speak } from "@/lib/speech";
 import { updateSettings, useSettings } from "@/lib/settings";
 
 interface ToggleRowProps {
@@ -66,7 +68,19 @@ export default function SettingsButton() {
   const openPanel = () => {
     // 설정 창을 여는 터치를 이용해 오디오를 깨워둔다
     unlockAudio();
+    primeSpeech();
     setOpen(true);
+  };
+
+  const testSfx = () => {
+    unlockAudio();
+    playCorrect();
+  };
+
+  const testVoice = () => {
+    primeSpeech();
+    cancelSpeech();
+    void speak("안녕! 나는 아기공룡이야.");
   };
 
   return (
@@ -152,6 +166,29 @@ export default function SettingsButton() {
                 on={settings.voice}
                 onChange={(next) => updateSettings({ voice: next })}
               />
+
+              <div className="rounded-2xl bg-white/85 px-4 py-3">
+                <p className="font-jua text-base text-slate-700">🎧 소리 테스트</p>
+                <p className="mt-0.5 font-jua text-xs text-slate-400">
+                  안 들리면 아이폰 옆면의 무음 스위치를 확인해주세요
+                </p>
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={testSfx}
+                    className="flex-1 rounded-xl bg-candy-blue px-3 py-2 font-jua text-sm text-white"
+                  >
+                    🔔 딩동댕동
+                  </button>
+                  <button
+                    type="button"
+                    onClick={testVoice}
+                    className="flex-1 rounded-xl bg-candy-purple px-3 py-2 font-jua text-sm text-white"
+                  >
+                    🗣️ 목소리
+                  </button>
+                </div>
+              </div>
 
               <Link
                 href="/voice"

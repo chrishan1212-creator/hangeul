@@ -15,6 +15,8 @@ export default function AppBootstrap() {
   useEffect(() => {
     loadSettings();
 
+    // 화면을 처음 만지는 순간에야 오디오 장치를 만들 수 있다.
+    // (그 전에 만들어두면 iOS에서 소리가 아예 나지 않는다)
     const handleFirstGesture = () => {
       unlockAudio();
       if (getSettings().bgm) startBgm();

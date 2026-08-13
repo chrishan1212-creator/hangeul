@@ -105,9 +105,13 @@ function scheduler(): void {
 }
 
 export function startBgm(): void {
-  const ctx = getAudioContext();
-  if (!ctx || running) return;
+  if (running) return;
   if (!getSettings().bgm) return;
+
+  // 터치 전에는 오디오 장치가 없다. 그때는 시작하지 않고 조용히 넘어가서
+  // 첫 터치 때 다시 시도되도록 둔다 (running 도 켜지 않는다).
+  const ctx = getAudioContext();
+  if (!ctx) return;
 
   if (ctx.state === "suspended") void ctx.resume();
 
