@@ -10,7 +10,7 @@ import PlayShell from "@/components/PlayShell";
 import TypingInput from "@/components/TypingInput";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { matchWordToEmoji } from "@/lib/wordEmojiMap";
-import { cancelSpeech, speak } from "@/lib/speech";
+import { cancelSpeech, primeSpeech, speak } from "@/lib/speech";
 
 const ENCOURAGEMENTS = ["참 잘했어요!", "최고예요!", "우와, 대단해요!", "딩동댕!", "잘 들었어요!"];
 
@@ -60,6 +60,8 @@ export default function SpeakPage() {
   const listening = status === "listening";
 
   const handleMicClick = () => {
+    // 아이폰은 터치 안에서 음성 엔진을 한 번 깨워둬야 이후 읽어주기가 나온다
+    primeSpeech();
     if (listening) {
       stop();
     } else {

@@ -19,10 +19,28 @@ function getCtx(): AudioContext | null {
  * 모바일(특히 iOS)은 사용자가 화면을 터치한 직후에만 소리를 켤 수 있다.
  * 게임 시작 버튼을 누를 때 한 번 불러주면 이후 효과음이 정상 재생된다.
  */
+let unlocked = false;
+
 export function unlockAudio(): void {
   const ctx = getCtx();
-  if (ctx && ctx.state === "suspended") {
+  if (!ctx) return;
+
+  if (ctx.state === "suspended") {
     void ctx.resume();
+  }
+
+  // iOS는 resume() 만으로는 안 열리는 경우가 있어서, 터치가 살아있는 동안
+  // 소리 없는 버퍼를 한 번 재생해 확실히 깨워준다.
+  if (unlocked) return;
+  unlocked = true;
+  try {
+    const buffer = ctx.createBuffer(1, 1, 22050);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.start(0);
+  } catch {
+    // 실패해도 이후 효과음 재생에는 영향이 없다
   }
 }
 

@@ -16,16 +16,29 @@ function isSpeechAvailable(): boolean {
   return typeof window !== "undefined" && "speechSynthesis" in window;
 }
 
+function isIOS(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+}
+
 let cachedVoice: SpeechSynthesisVoice | null = null;
 
 /**
- * 기기에 설치된 한국어 목소리 중 가장 자연스러운 것을 고른다.
+ * 한국어 목소리를 고른다.
  *
- * 기기에 "향상된(Enhanced/Premium)" 한국어 음성이 설치되어 있으면 그걸 쓰고,
- * 없으면 기본 한국어 음성으로 넘어간다. 목소리 목록은 늦게 로드되는 경우가
- * 있어서 한 번 찾은 뒤에만 기억해둔다.
+ * ⚠️ iOS(Safari)에서는 utterance.voice 를 직접 지정하면 아무 소리도 나지 않는
+ * 경우가 있다(WebKit의 오래된 문제). iOS는 lang 만 지정하면 사용자가 설정에서
+ * 고른 한국어 음성(예: 유나 프리미엄)을 시스템이 알아서 써주기 때문에,
+ * iOS에서는 목소리를 지정하지 않는 편이 오히려 안전하고 결과도 좋다.
+ *
+ * 안드로이드 등에서는 한국어 음성이 여러 개 깔려 있을 수 있어서
+ * 향상된(Enhanced/Premium) 음성을 골라주는 게 도움이 된다.
  */
 function getKoreanVoice(): SpeechSynthesisVoice | null {
+  if (isIOS()) return null;
   if (cachedVoice) return cachedVoice;
   if (!isSpeechAvailable()) return null;
 
@@ -38,20 +51,40 @@ function getKoreanVoice(): SpeechSynthesisVoice | null {
   return cachedVoice;
 }
 
+let primed = false;
+
+/**
+ * iOS(Safari)는 **첫 speak() 호출이 사용자의 터치 안에서** 일어나야만 이후
+ * 소리를 허용한다. 질문을 잠시 뒤에 들려주는 것처럼 setTimeout 안에서 처음
+ * 말하려고 하면 터치 맥락을 벗어나 아무 소리도 나지 않는다.
+ *
+ * 그래서 버튼을 누르는 순간(터치 핸들러 안)에 소리 없는 문장을 한 번 흘려보내
+ * 음성 엔진을 미리 열어둔다. 이후의 말들은 언제 호출해도 정상 재생된다.
+ */
+export function primeSpeech(): void {
+  if (primed || !isSpeechAvailable()) return;
+  primed = true;
+  try {
+    const warmup = new SpeechSynthesisUtterance(" ");
+    warmup.volume = 0;
+    warmup.lang = "ko-KR";
+    window.speechSynthesis.speak(warmup);
+  } catch {
+    // 실패해도 이후 재생 시도에는 영향이 없다
+  }
+}
+
+let lastCancelAt = 0;
+
 /** 재생 중이거나 대기 중인 말을 모두 취소한다 (녹음 파일 재생도 함께 멈춘다) */
 export function cancelSpeech(): void {
   stopClip();
   if (!isSpeechAvailable()) return;
+  lastCancelAt = Date.now();
   window.speechSynthesis.cancel();
 }
 
-/**
- * 한국어로 한 문장을 읽어주고, 다 읽으면 resolve 되는 Promise를 반환한다.
- *
- * iOS 등 일부 환경에서는 onend 이벤트가 아예 오지 않는 경우가 있어서,
- * 글자 수에 비례한 여유 시간이 지나면 강제로 resolve 한다.
- * (그래야 다음 단계가 영원히 멈추지 않는다)
- */
+/** 말할 내용이 있으면 녹음 파일을, 없으면 TTS를 쓴다 */
 export function speak(text: string, options: SpeakOptions = {}): Promise<void> {
   const clip = getClipUrl(text);
   if (clip) return playClip(clip);
@@ -76,6 +109,21 @@ export async function speakPhrase(parts: string[], options: SpeakOptions = {}): 
   await speakWithTts(parts.join(""), options);
 }
 
+/** cancel() 직후에 바로 speak() 하면 씹히는 브라우저가 있어 살짝 텀을 준다 */
+const POST_CANCEL_GAP_MS = 120;
+
+/** 이 시간 안에 말이 시작되지 않으면 목소리 지정을 빼고 한 번 더 시도한다 */
+const START_WATCHDOG_MS = 800;
+
+/**
+ * 한국어로 한 문장을 읽어주고, 다 읽으면 resolve 되는 Promise를 반환한다.
+ *
+ * 소리가 안 나는 상황을 여러 겹으로 방어한다:
+ * 1) speechSynthesis 가 일시정지 상태로 굳어 있으면 이후 모든 말이 안 나오므로
+ *    말하기 전에 항상 resume() 한다.
+ * 2) 지정한 목소리 때문에 재생이 실패하면, 목소리 지정 없이 자동으로 재시도한다.
+ * 3) onend 가 아예 오지 않는 기기가 있어서, 시간이 지나면 강제로 resolve 한다.
+ */
 function speakWithTts(
   text: string,
   { rate = 0.9, pitch = 1.15 }: SpeakOptions = {}
@@ -86,27 +134,74 @@ function speakWithTts(
       return;
     }
 
+    const synth = window.speechSynthesis;
     let settled = false;
+    let started = false;
+    let activeUtterance: SpeechSynthesisUtterance | null = null;
+
     const finish = () => {
       if (settled) return;
       settled = true;
+      clearTimeout(watchdog);
       clearTimeout(fallbackTimer);
       resolve();
     };
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "ko-KR";
-    utterance.rate = rate;
-    utterance.pitch = pitch;
-    utterance.onend = finish;
-    utterance.onerror = finish;
+    const buildUtterance = (withVoice: boolean) => {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "ko-KR";
+      utterance.rate = rate;
+      utterance.pitch = pitch;
 
-    const voice = getKoreanVoice();
-    if (voice) utterance.voice = voice;
+      if (withVoice) {
+        const voice = getKoreanVoice();
+        if (voice) utterance.voice = voice;
+      }
 
-    const fallbackTimer = setTimeout(finish, 1200 + text.length * 400);
+      utterance.onstart = () => {
+        started = true;
+      };
+      // 재시도로 버려진 utterance 의 이벤트는 무시한다
+      utterance.onend = () => {
+        if (utterance === activeUtterance) finish();
+      };
+      utterance.onerror = () => {
+        if (utterance === activeUtterance) finish();
+      };
 
-    window.speechSynthesis.speak(utterance);
+      return utterance;
+    };
+
+    const speakNow = (withVoice: boolean) => {
+      if (settled) return;
+      try {
+        synth.resume();
+      } catch {
+        // 일부 브라우저는 resume 자체가 없을 수 있다
+      }
+      const utterance = buildUtterance(withVoice);
+      activeUtterance = utterance;
+      synth.speak(utterance);
+    };
+
+    // 방금 cancel() 했다면 잠깐 쉬었다가 말한다
+    const sinceCancel = Date.now() - lastCancelAt;
+    const startDelay = sinceCancel < POST_CANCEL_GAP_MS ? POST_CANCEL_GAP_MS - sinceCancel : 0;
+    setTimeout(() => speakNow(true), startDelay);
+
+    // 목소리 지정 탓에 소리가 안 나는 경우를 대비한 재시도
+    const watchdog = setTimeout(() => {
+      if (settled || started || synth.speaking) return;
+      activeUtterance = null;
+      try {
+        synth.cancel();
+      } catch {
+        // ignore
+      }
+      setTimeout(() => speakNow(false), 80);
+    }, startDelay + START_WATCHDOG_MS);
+
+    const fallbackTimer = setTimeout(finish, startDelay + 2000 + text.length * 400);
   });
 }
 

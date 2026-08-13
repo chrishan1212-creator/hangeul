@@ -6,6 +6,7 @@ import PlayShell from "@/components/PlayShell";
 import GameBoard from "@/components/game/GameBoard";
 import { GameMode, MODE_LIST } from "@/lib/gameData";
 import { unlockAudio } from "@/lib/sfx";
+import { primeSpeech } from "@/lib/speech";
 
 export default function GamePage() {
   const [mode, setMode] = useState<GameMode | null>(null);
@@ -13,8 +14,11 @@ export default function GamePage() {
   const [choiceCount, setChoiceCount] = useState(4);
 
   const startGame = (selected: GameMode) => {
-    // 아이폰은 화면을 터치한 직후에만 소리를 켤 수 있어서 여기서 미리 열어둔다
+    // 아이폰은 화면을 터치한 순간에만 소리를 열 수 있다.
+    // 효과음(Web Audio)과 읽어주기(TTS) 둘 다 여기서 미리 깨워둬야
+    // 잠시 뒤에 나오는 질문 소리가 정상적으로 재생된다.
     unlockAudio();
+    primeSpeech();
     setMode(selected);
   };
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { primeSpeech } from "@/lib/speech";
 
 interface TypingInputProps {
   onSubmit: (word: string) => void;
@@ -14,6 +15,8 @@ export default function TypingInput({ onSubmit }: TypingInputProps) {
     e.preventDefault();
     const trimmed = value.trim();
     if (!trimmed) return;
+    // 아이폰은 터치 안에서 음성 엔진을 깨워둬야 읽어주기가 나온다
+    primeSpeech();
     onSubmit(trimmed);
     setValue("");
   };
