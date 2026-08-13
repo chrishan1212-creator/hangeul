@@ -87,6 +87,30 @@ export function playCorrect(): void {
   chime(ctx, 1567.98, now + 3 * 0.14, 0.6, 0.09, "triangle");
 }
 
+/** 공룡이 음식에 도착해서 먹을 때. 정답 팡파레보다 조금 더 길고 신나게 */
+export function playFeast(): void {
+  const ctx = getCtx();
+  if (!ctx) return;
+  if (ctx.state === "suspended") void ctx.resume();
+
+  const now = ctx.currentTime + 0.02;
+  // 도 미 솔 도 / 솔 도 (올라갔다가 한 번 더 치솟는 느낌)
+  const melody = [
+    [523.25, 0.0],
+    [659.25, 0.12],
+    [783.99, 0.24],
+    [1046.5, 0.36],
+    [783.99, 0.52],
+    [1046.5, 0.64],
+    [1318.51, 0.78],
+  ] as const;
+
+  for (const [freq, offset] of melody) {
+    chime(ctx, freq, now + offset, 0.45, 0.24);
+  }
+  chime(ctx, 1567.98, now + 0.78, 0.7, 0.1, "triangle");
+}
+
 /** 오답. 아이가 주눅들지 않게 부드럽고 짧게 */
 export function playWrong(): void {
   const ctx = getCtx();

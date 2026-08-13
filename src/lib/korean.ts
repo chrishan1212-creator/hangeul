@@ -20,3 +20,8 @@ export function topicParticle(word: string): string {
 export function objectParticle(word: string): string {
   return hasBatchim(word) ? "을" : "를";
 }
+
+/** 이/가 (예: "손이", "코가") */
+export function subjectParticle(word: string): string {
+  return hasBatchim(word) ? "이" : "가";
+}

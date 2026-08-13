@@ -3,15 +3,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Confetti from "@/components/Confetti";
 import ChoiceTile from "./ChoiceTile";
+import DinoTrack from "./DinoTrack";
 import {
   GameMode,
   Question,
   QuizItem,
-  buildPromptParts,
   getPool,
+  isLetterMode,
   makeQuestion,
 } from "@/lib/gameData";
-import { playCorrect, playWrong, unlockAudio } from "@/lib/sfx";
+import { DinoInfo, JOURNEY_GOAL, randomDino } from "@/lib/dino";
+import { playCorrect, playFeast, playWrong, unlockAudio } from "@/lib/sfx";
 import { cancelSpeech, delay, speak, speakPhrase } from "@/lib/speech";
 import { fillWidthFontSize } from "@/lib/textSize";
 
@@ -22,12 +24,12 @@ interface GameBoardProps {
   onExit: () => void;
 }
 
-/** 정답 축하 순서가 끝나지 않아도 이 시간이 지나면 '다음' 버튼을 보여준다 */
-const NEXT_BUTTON_FALLBACK_MS = 8000;
+/** 축하 순서가 끝나지 않아도 이 시간이 지나면 '다음' 버튼을 보여준다 */
+const NEXT_BUTTON_FALLBACK_MS = 12000;
 
 /**
  * 화면이 바뀌자마자 소리가 나오면 아이가 앞부분을 놓치므로,
- * 새 문제가 나온 뒤 잠깐 쉬었다가 질문을 들려준다.
+ * 새 문제가 나온 뒤 잠깐 쉬었다가 공룡이 말하게 한다.
  */
 const QUESTION_DELAY_MS = 1000;
 
@@ -47,24 +49,36 @@ export default function GameBoard({
   const [confettiKey, setConfettiKey] = useState(0);
   const [showNext, setShowNext] = useState(false);
 
-  // 정답 축하 순서가 진행되는 동안 다른 화면으로 넘어가면 중단시키기 위한 토큰
+  const [dino, setDino] = useState<DinoInfo>(() => randomDino());
+  const [step, setStep] = useState(0);
+  const [feasting, setFeasting] = useState(false);
+
+  // 진행 중인 순서를 중간에 끊기 위한 토큰
   const sequenceRef = useRef(0);
   const lastTargetRef = useRef<string | undefined>(undefined);
+  // 여행이 끝나서 다음 문제 때 새 공룡으로 바꿔야 하는지
+  const journeyDoneRef = useRef(false);
 
   const pool = useMemo(() => getPool(mode, includeBatchim), [mode, includeBatchim]);
+  const letterMode = isLetterMode(mode);
 
-  /** 지금 바로 질문을 들려준다 (다시 듣기 버튼용) */
-  const askNow = useCallback(
-    (q: Question) => {
-      cancelSpeech();
-      void speakPhrase(buildPromptParts(mode, q.target));
-    },
-    [mode]
-  );
+  /** 지금 바로 공룡 대사를 들려준다 (다시 듣기 버튼용) */
+  const askNow = useCallback((q: Question) => {
+    cancelSpeech();
+    void speakPhrase(q.lineParts);
+  }, []);
 
   const nextQuestion = useCallback(() => {
     const token = ++sequenceRef.current;
-    const q = makeQuestion(pool, choiceCount, lastTargetRef.current);
+
+    if (journeyDoneRef.current) {
+      journeyDoneRef.current = false;
+      setDino(randomDino());
+      setStep(0);
+    }
+    setFeasting(false);
+
+    const q = makeQuestion(pool, mode, choiceCount, lastTargetRef.current);
     lastTargetRef.current = q.target.display;
 
     setQuestion(q);
@@ -73,10 +87,10 @@ export default function GameBoard({
     setWrongDisplay(null);
 
     cancelSpeech();
-    // 화면이 먼저 뜨고 잠깐 뒤에 질문이 나오도록 한 박자 쉰다
+    // 화면이 먼저 뜨고 잠깐 뒤에 공룡이 말하도록 한 박자 쉰다
     setTimeout(() => {
       if (sequenceRef.current !== token) return;
-      void speakPhrase(buildPromptParts(mode, q.target));
+      void speakPhrase(q.lineParts);
     }, QUESTION_DELAY_MS);
   }, [pool, choiceCount, mode]);
 
@@ -92,45 +106,67 @@ export default function GameBoard({
     };
   }, []);
 
-  const celebrate = useCallback(async (target: QuizItem) => {
-    const token = ++sequenceRef.current;
-    const stillActive = () => sequenceRef.current === token;
+  const celebrate = useCallback(
+    async (target: QuizItem, reachedGoal: boolean, currentDino: DinoInfo) => {
+      const token = ++sequenceRef.current;
+      const stillActive = () => sequenceRef.current === token;
 
-    const fallback = setTimeout(() => {
-      if (stillActive()) setShowNext(true);
-    }, NEXT_BUTTON_FALLBACK_MS);
+      const fallback = setTimeout(() => {
+        if (stillActive()) setShowNext(true);
+      }, NEXT_BUTTON_FALLBACK_MS);
 
-    try {
-      await delay(CELEBRATION_DELAY_MS);
-      if (!stillActive()) return;
-      await speak(target.spoken);
-      if (!stillActive()) return;
+      try {
+        await delay(CELEBRATION_DELAY_MS);
+        if (!stillActive()) return;
+        await speak(target.spoken);
+        if (!stillActive()) return;
 
-      await delay(250);
-      if (!stillActive()) return;
-      await speak("따라해보세요");
-      if (!stillActive()) return;
+        await delay(250);
+        if (!stillActive()) return;
+        await speak("따라해보세요");
+        if (!stillActive()) return;
 
-      await delay(200);
-      if (!stillActive()) return;
-      await speak(target.spoken);
-    } finally {
-      clearTimeout(fallback);
-      if (stillActive()) setShowNext(true);
-    }
-  }, []);
+        await delay(200);
+        if (!stillActive()) return;
+        await speak(target.spoken);
+        if (!stillActive()) return;
+
+        // 공룡이 음식에 도착했으면 먹는 장면을 보여준다
+        if (reachedGoal) {
+          await delay(400);
+          if (!stillActive()) return;
+          playFeast();
+          setFeasting(true);
+          setConfettiKey((k) => k + 1);
+          await delay(900);
+          if (!stillActive()) return;
+          await speak(currentDino.feastLine);
+        }
+      } finally {
+        clearTimeout(fallback);
+        if (stillActive()) setShowNext(true);
+      }
+    },
+    []
+  );
 
   const handleChoice = (item: QuizItem) => {
     if (!question || celebrating) return;
 
     if (item.display === question.target.display) {
+      const nextStep = step + 1;
+      const reachedGoal = nextStep >= JOURNEY_GOAL;
+
       cancelSpeech();
       playCorrect();
       setCelebrating(true);
       setWrongDisplay(null);
       setScore((s) => s + 1);
       setConfettiKey((k) => k + 1);
-      void celebrate(question.target);
+      setStep(nextStep);
+      if (reachedGoal) journeyDoneRef.current = true;
+
+      void celebrate(question.target, reachedGoal, dino);
     } else {
       playWrong();
       setWrongDisplay(item.display);
@@ -145,29 +181,35 @@ export default function GameBoard({
 
   const target = question?.target;
   const showSubtitle = !!target && target.display !== target.spoken;
+  // 그림 힌트: 글자를 배우는 모드에는 그림이 없으니 물음표를 보여준다
+  const hintEmoji = letterMode ? "❓" : target?.emoji ?? "❓";
 
   return (
     <>
       <Confetti triggerKey={confettiKey} />
 
-      <header className="relative z-10 flex w-full max-w-md items-center justify-between">
-        <button
-          type="button"
-          onClick={onExit}
-          aria-label="게임 종료하고 뒤로 가기"
-          className="rounded-full bg-white/25 px-4 py-2 font-jua text-lg text-white backdrop-blur-sm transition hover:bg-white/35"
-        >
-          ← 뒤로
-        </button>
-        <span className="rounded-full bg-white/25 px-4 py-2 font-jua text-lg text-white backdrop-blur-sm">
-          ⭐ {score}
-        </span>
-      </header>
+      <div className="relative z-10 flex w-full max-w-md flex-col items-center gap-1">
+        <header className="flex w-full items-center justify-between">
+          <button
+            type="button"
+            onClick={onExit}
+            aria-label="게임 종료하고 뒤로 가기"
+            className="rounded-full bg-white/25 px-4 py-2 font-jua text-lg text-white backdrop-blur-sm transition hover:bg-white/35"
+          >
+            ← 뒤로
+          </button>
+          <span className="rounded-full bg-white/25 px-4 py-2 font-jua text-lg text-white backdrop-blur-sm">
+            ⭐ {score}
+          </span>
+        </header>
+
+        <DinoTrack dino={dino} step={step} goal={JOURNEY_GOAL} feasting={feasting} />
+      </div>
 
       {celebrating && target ? (
-        <section className="relative z-20 flex w-full max-w-md flex-1 flex-col items-center justify-center gap-3 py-6 text-center">
+        <section className="relative z-20 flex w-full max-w-md flex-1 flex-col items-center justify-center gap-2 py-4 text-center">
           {target.emoji && (
-            <div className="animate-pop-in text-[4.5rem] leading-none drop-shadow-xl sm:text-[6rem]">
+            <div className="animate-pop-in text-[4rem] leading-none drop-shadow-xl sm:text-[5rem]">
               {target.emoji}
             </div>
           )}
@@ -182,26 +224,31 @@ export default function GameBoard({
               {target.spoken}
             </div>
           )}
-          <p className="mt-2 font-jua text-2xl text-candy-yellow drop-shadow sm:text-3xl">
-            따라해보세요!
+          <p className="font-jua text-2xl text-candy-yellow drop-shadow sm:text-3xl">
+            {feasting ? "냠냠! 맛있다! 🎉" : "따라해보세요!"}
           </p>
         </section>
       ) : (
-        <section className="relative z-10 flex w-full max-w-md flex-1 flex-col items-center justify-center gap-6 py-6">
-          <div className="flex flex-col items-center gap-3 text-center">
-            <p className="font-jua text-2xl text-white drop-shadow sm:text-3xl">
-              🔊 잘 듣고 골라보세요
-            </p>
-            <button
-              type="button"
-              onClick={handleRepeat}
-              className="rounded-full bg-white/30 px-5 py-2 font-jua text-lg text-white backdrop-blur-sm transition hover:bg-white/40"
-            >
-              🔁 다시 듣기
-            </button>
+        <section className="relative z-10 flex w-full max-w-md flex-1 flex-col items-center justify-center gap-5 py-4">
+          {/* 아기공룡이 말풍선으로 힌트 그림을 보여준다 (글자는 숨긴다) */}
+          <div className="flex items-end justify-center gap-1">
+            <span className="animate-float text-6xl drop-shadow-lg sm:text-7xl">
+              {dino.emoji}
+            </span>
+            <div className="relative rounded-3xl rounded-bl-md bg-white/90 px-6 py-4 shadow-lg">
+              <span className="block text-6xl leading-none sm:text-7xl">{hintEmoji}</span>
+            </div>
           </div>
 
-          <div className="grid w-full grid-cols-2 gap-4">
+          <button
+            type="button"
+            onClick={handleRepeat}
+            className="rounded-full bg-white/30 px-5 py-2 font-jua text-lg text-white backdrop-blur-sm transition hover:bg-white/40"
+          >
+            🔁 다시 듣기
+          </button>
+
+          <div className="grid w-full grid-cols-2 gap-3">
             {question?.choices.map((choice) => (
               <ChoiceTile
                 key={choice.display}

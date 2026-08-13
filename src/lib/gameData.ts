@@ -1,4 +1,4 @@
-import { objectParticle, topicParticle } from "./korean";
+import { buildDinoLineParts, getWordCategory } from "./dinoLines";
 
 export type GameMode = "syllable" | "word2" | "consonant" | "vowel";
 
@@ -181,21 +181,21 @@ export function getPool(mode: GameMode, includeBatchim: boolean): QuizItem[] {
   }
 }
 
-/**
- * 소리로 들려줄 질문을 [단어, 뒷부분] 두 조각으로 만든다.
- *
- * 두 조각으로 나누는 이유: 직접 녹음한 목소리를 쓸 때 단어 하나하나와
- * 뒷부분 4가지만 녹음하면 되기 때문이다 (문장을 통째로 다 녹음할 필요가 없다).
- * 녹음이 없으면 두 조각을 합쳐서 TTS가 한 문장으로 읽는다.
- */
-export function buildPromptParts(mode: GameMode, item: QuizItem): [string, string] {
-  if (mode === "consonant" || mode === "vowel") {
-    return [item.spoken, `${objectParticle(item.spoken)} 찾아보세요`];
-  }
-  return [item.spoken, `${topicParticle(item.spoken)} 어디 있을까요?`];
+/** 자음·모음처럼 글자 자체를 배우는 모드인지 */
+export function isLetterMode(mode: GameMode): boolean {
+  return mode === "consonant" || mode === "vowel";
 }
 
-/** 질문 전체 문장 (화면 표시나 디버깅용) */
+/**
+ * 아기공룡이 낼 문제의 대사 조각들을 만든다.
+ * 예: 코 -> ["나 지금 ", "코", "가 아파! ", "코", "는 어디 있을까?"]
+ */
+export function buildPromptParts(mode: GameMode, item: QuizItem): string[] {
+  const category = getWordCategory(item.spoken, isLetterMode(mode));
+  return buildDinoLineParts(item.spoken, category);
+}
+
+/** 질문 전체 문장 (디버깅·테스트용) */
 export function buildPrompt(mode: GameMode, item: QuizItem): string {
   return buildPromptParts(mode, item).join("");
 }
@@ -203,6 +203,11 @@ export function buildPrompt(mode: GameMode, item: QuizItem): string {
 export interface Question {
   target: QuizItem;
   choices: QuizItem[];
+  /**
+   * 아기공룡 대사 조각. 문제를 만들 때 한 번만 정해서 들고 다닌다.
+   * (매번 새로 만들면 '다시 듣기'를 눌렀을 때 다른 대사가 나와버린다)
+   */
+  lineParts: string[];
 }
 
 function shuffle<T>(items: T[]): T[] {
@@ -220,6 +225,7 @@ function shuffle<T>(items: T[]): T[] {
  */
 export function makeQuestion(
   pool: QuizItem[],
+  mode: GameMode,
   choiceCount: number,
   avoidDisplay?: string
 ): Question {
@@ -234,5 +240,9 @@ export function makeQuestion(
     Math.max(0, choiceCount - 1)
   );
 
-  return { target, choices: shuffle([target, ...distractors]) };
+  return {
+    target,
+    choices: shuffle([target, ...distractors]),
+    lineParts: buildPromptParts(mode, target),
+  };
 }
