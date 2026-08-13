@@ -9,6 +9,28 @@ function isSpeechAvailable(): boolean {
   return typeof window !== "undefined" && "speechSynthesis" in window;
 }
 
+let cachedVoice: SpeechSynthesisVoice | null = null;
+
+/**
+ * 기기에 설치된 한국어 목소리 중 가장 자연스러운 것을 고른다.
+ *
+ * 기기에 "향상된(Enhanced/Premium)" 한국어 음성이 설치되어 있으면 그걸 쓰고,
+ * 없으면 기본 한국어 음성으로 넘어간다. 목소리 목록은 늦게 로드되는 경우가
+ * 있어서 한 번 찾은 뒤에만 기억해둔다.
+ */
+function getKoreanVoice(): SpeechSynthesisVoice | null {
+  if (cachedVoice) return cachedVoice;
+  if (!isSpeechAvailable()) return null;
+
+  const voices = window.speechSynthesis.getVoices();
+  const korean = voices.filter((voice) => voice.lang?.toLowerCase().startsWith("ko"));
+  if (korean.length === 0) return null;
+
+  const enhanced = korean.find((voice) => /premium|enhanced|neural|향상/i.test(voice.name));
+  cachedVoice = enhanced ?? korean[0];
+  return cachedVoice;
+}
+
 /** 재생 중이거나 대기 중인 말을 모두 취소한다 */
 export function cancelSpeech(): void {
   if (!isSpeechAvailable()) return;
@@ -43,6 +65,9 @@ export function speak(text: string, { rate = 0.9, pitch = 1.15 }: SpeakOptions =
     utterance.pitch = pitch;
     utterance.onend = finish;
     utterance.onerror = finish;
+
+    const voice = getKoreanVoice();
+    if (voice) utterance.voice = voice;
 
     const fallbackTimer = setTimeout(finish, 1200 + text.length * 400);
 

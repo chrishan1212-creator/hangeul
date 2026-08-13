@@ -1,27 +1,18 @@
 "use client";
 
+import { fillWidthFontSize } from "@/lib/textSize";
+
 interface WordDisplayProps {
   word: string;
   emoji: string;
   animationKey: number;
 }
 
-/**
- * 글자 수에 따라 크기를 다르게 보여준다.
- * 2글자 이하는 가장 크게, 5글자 이상은 가장 작게, 그 사이는 단계적으로 줄어든다.
- */
-function getWordSizeClasses(length: number): string {
-  if (length <= 2) return "text-7xl sm:text-9xl";
-  if (length === 3) return "text-6xl sm:text-8xl";
-  if (length === 4) return "text-5xl sm:text-7xl";
-  return "text-4xl sm:text-6xl";
-}
-
+/** 글자가 짧을수록 이모지도 조금 크게 (긴 단어는 글씨에 자리를 양보한다) */
 function getEmojiSizeClasses(length: number): string {
-  if (length <= 2) return "text-[7rem] sm:text-[10rem]";
-  if (length === 3) return "text-[6.5rem] sm:text-[9rem]";
-  if (length === 4) return "text-[6rem] sm:text-[8rem]";
-  return "text-[5.5rem] sm:text-[7rem]";
+  if (length <= 2) return "text-[6rem] sm:text-[8rem]";
+  if (length === 3) return "text-[5.5rem] sm:text-[7rem]";
+  return "text-[5rem] sm:text-[6rem]";
 }
 
 export default function WordDisplay({ word, emoji, animationKey }: WordDisplayProps) {
@@ -39,13 +30,24 @@ export default function WordDisplay({ word, emoji, animationKey }: WordDisplayPr
   return (
     <div
       key={animationKey}
-      className="flex flex-col items-center gap-2 text-center animate-pop-in"
+      className="flex w-full flex-col items-center gap-2 text-center animate-pop-in"
     >
       <div className={`leading-none drop-shadow-xl ${getEmojiSizeClasses(word.length)}`}>
         {emoji}
       </div>
       <div
-        className={`font-jua text-white drop-shadow-[0_4px_0_rgba(0,0,0,0.2)] ${getWordSizeClasses(word.length)}`}
+        className="font-jua text-white drop-shadow-[0_4px_0_rgba(0,0,0,0.2)]"
+        style={{
+          // 말하기 화면은 아래에 입력창과 마이크 버튼이 있어서
+          // 게임 화면보다는 조금 작게 잡아 버튼이 가려지지 않게 한다.
+          fontSize: fillWidthFontSize(word, {
+            usableWidthVw: 78,
+            maxVw: 62,
+            maxWidthRem: 15,
+          }),
+          lineHeight: 1.15,
+          wordBreak: "keep-all",
+        }}
       >
         {word}
       </div>

@@ -13,6 +13,7 @@ import {
 } from "@/lib/gameData";
 import { playCorrect, playWrong, unlockAudio } from "@/lib/sfx";
 import { cancelSpeech, delay, speak } from "@/lib/speech";
+import { fillWidthFontSize } from "@/lib/textSize";
 
 interface GameBoardProps {
   mode: GameMode;
@@ -22,7 +23,16 @@ interface GameBoardProps {
 }
 
 /** 정답 축하 순서가 끝나지 않아도 이 시간이 지나면 '다음' 버튼을 보여준다 */
-const NEXT_BUTTON_FALLBACK_MS = 7000;
+const NEXT_BUTTON_FALLBACK_MS = 8000;
+
+/**
+ * 화면이 바뀌자마자 소리가 나오면 아이가 앞부분을 놓치므로,
+ * 새 문제가 나온 뒤 잠깐 쉬었다가 질문을 들려준다.
+ */
+const QUESTION_DELAY_MS = 1000;
+
+/** 팡파레가 울리는 동안 기다렸다가 글자를 읽어준다 */
+const CELEBRATION_DELAY_MS = 1400;
 
 export default function GameBoard({
   mode,
@@ -43,7 +53,8 @@ export default function GameBoard({
 
   const pool = useMemo(() => getPool(mode, includeBatchim), [mode, includeBatchim]);
 
-  const askQuestion = useCallback(
+  /** 지금 바로 질문을 들려준다 (다시 듣기 버튼용) */
+  const askNow = useCallback(
     (q: Question) => {
       cancelSpeech();
       void speak(buildPrompt(mode, q.target));
@@ -52,7 +63,7 @@ export default function GameBoard({
   );
 
   const nextQuestion = useCallback(() => {
-    sequenceRef.current += 1;
+    const token = ++sequenceRef.current;
     const q = makeQuestion(pool, choiceCount, lastTargetRef.current);
     lastTargetRef.current = q.target.display;
 
@@ -60,8 +71,14 @@ export default function GameBoard({
     setCelebrating(false);
     setShowNext(false);
     setWrongDisplay(null);
-    askQuestion(q);
-  }, [pool, choiceCount, askQuestion]);
+
+    cancelSpeech();
+    // 화면이 먼저 뜨고 잠깐 뒤에 질문이 나오도록 한 박자 쉰다
+    setTimeout(() => {
+      if (sequenceRef.current !== token) return;
+      void speak(buildPrompt(mode, q.target));
+    }, QUESTION_DELAY_MS);
+  }, [pool, choiceCount, mode]);
 
   useEffect(() => {
     unlockAudio();
@@ -84,8 +101,7 @@ export default function GameBoard({
     }, NEXT_BUTTON_FALLBACK_MS);
 
     try {
-      // 팡파레가 울리는 동안 잠깐 기다렸다가 글자를 읽어준다
-      await delay(950);
+      await delay(CELEBRATION_DELAY_MS);
       if (!stillActive()) return;
       await speak(target.spoken);
       if (!stillActive()) return;
@@ -124,7 +140,7 @@ export default function GameBoard({
 
   const handleRepeat = () => {
     if (!question || celebrating) return;
-    askQuestion(question);
+    askNow(question);
   };
 
   const target = question?.target;
@@ -151,11 +167,14 @@ export default function GameBoard({
       {celebrating && target ? (
         <section className="relative z-20 flex w-full max-w-md flex-1 flex-col items-center justify-center gap-3 py-6 text-center">
           {target.emoji && (
-            <div className="animate-pop-in text-[6rem] leading-none drop-shadow-xl sm:text-[8rem]">
+            <div className="animate-pop-in text-[4.5rem] leading-none drop-shadow-xl sm:text-[6rem]">
               {target.emoji}
             </div>
           )}
-          <div className="animate-pop-in font-jua text-8xl text-white drop-shadow-[0_5px_0_rgba(0,0,0,0.25)] sm:text-9xl">
+          <div
+            className="animate-pop-in font-jua text-white drop-shadow-[0_5px_0_rgba(0,0,0,0.25)]"
+            style={{ fontSize: fillWidthFontSize(target.display), lineHeight: 1.15 }}
+          >
             {target.display}
           </div>
           {showSubtitle && (
