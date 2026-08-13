@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Confetti from "@/components/Confetti";
 import ChoiceTile from "./ChoiceTile";
-import DinoTrack from "./DinoTrack";
+import AnimalTrack from "./AnimalTrack";
 import SettingsButton from "@/components/SettingsButton";
 import {
   GameMode,
@@ -14,14 +14,16 @@ import {
   makeQuestion,
 } from "@/lib/gameData";
 import {
-  DinoInfo,
+  AnimalInfo,
   FoodItem,
   JOURNEY_GOAL,
+  MAX_GROWTH_ROUND,
+  animalScale,
   buildFeastLine,
-  dinoScale,
-  randomDino,
+  buildGreetingLine,
+  randomAnimal,
   randomFood,
-} from "@/lib/dino";
+} from "@/lib/animals";
 import { playCorrect, playFeast, playWrong, unlockAudio } from "@/lib/sfx";
 import { cancelSpeech, delay, speak, speakPhrase } from "@/lib/speech";
 import { fillWidthFontSize } from "@/lib/textSize";
@@ -58,12 +60,20 @@ export default function GameBoard({
   const [confettiKey, setConfettiKey] = useState(0);
   const [showNext, setShowNext] = useState(false);
 
-  // 공룡은 한 판 내내 같은 아이가 따라다니고, 밥을 먹을 때마다 조금씩 커진다
-  const [dino] = useState<DinoInfo>(() => randomDino());
+  // 같은 친구가 따라다니며 밥을 먹을 때마다 자라고, 다 자라면 새 친구가 온다
+  const [animal, setAnimal] = useState<AnimalInfo>(() => randomAnimal());
   const [round, setRound] = useState(0);
-  const [food, setFood] = useState<FoodItem>(() => randomFood(dino.type));
+  const [food, setFood] = useState<FoodItem>(() => randomFood(animal.diet));
   const [step, setStep] = useState(0);
   const [feasting, setFeasting] = useState(false);
+
+  // nextQuestion 이 매번 새로 만들어지지 않도록 최신 값을 ref 로도 들고 있는다
+  const animalRef = useRef(animal);
+  animalRef.current = animal;
+  const roundRef = useRef(round);
+  roundRef.current = round;
+  const foodRef = useRef(food);
+  foodRef.current = food;
 
   // 진행 중인 순서를 중간에 끊기 위한 토큰
   const sequenceRef = useRef(0);
@@ -83,11 +93,22 @@ export default function GameBoard({
   const nextQuestion = useCallback(() => {
     const token = ++sequenceRef.current;
 
+    // 한 끼 다 먹었으면 친구가 자라고, 다음엔 다른 음식을 찾아 떠난다.
+    // 다 자란 친구는 인사하고 떠나면서 새 친구를 데려온다.
+    let newFriend: AnimalInfo | null = null;
     if (journeyDoneRef.current) {
       journeyDoneRef.current = false;
-      // 한 끼 다 먹었으니 공룡이 조금 커지고, 다음엔 다른 음식을 찾아 떠난다
-      setRound((r) => r + 1);
-      setFood((prev) => randomFood(dino.type, prev.name));
+      const nextRound = roundRef.current + 1;
+
+      if (nextRound > MAX_GROWTH_ROUND) {
+        newFriend = randomAnimal(animalRef.current.name);
+        setAnimal(newFriend);
+        setRound(0);
+        setFood(randomFood(newFriend.diet));
+      } else {
+        setRound(nextRound);
+        setFood(randomFood(animalRef.current.diet, foodRef.current.name));
+      }
       setStep(0);
     }
     setFeasting(false);
@@ -101,12 +122,21 @@ export default function GameBoard({
     setWrongDisplay(null);
 
     cancelSpeech();
-    // 화면이 먼저 뜨고 잠깐 뒤에 공룡이 말하도록 한 박자 쉰다
+    // 화면이 먼저 뜨고 잠깐 뒤에 친구가 말하도록 한 박자 쉰다
     setTimeout(() => {
-      if (sequenceRef.current !== token) return;
-      void speakPhrase(q.lineParts);
+      void (async () => {
+        if (sequenceRef.current !== token) return;
+        // 새 친구가 왔으면 먼저 인사부터 시킨다
+        if (newFriend) {
+          await speak(buildGreetingLine(newFriend));
+          if (sequenceRef.current !== token) return;
+          await delay(250);
+          if (sequenceRef.current !== token) return;
+        }
+        await speakPhrase(q.lineParts);
+      })();
     }, QUESTION_DELAY_MS);
-  }, [pool, choiceCount, mode, dino.type]);
+  }, [pool, choiceCount, mode]);
 
   useEffect(() => {
     unlockAudio();
@@ -220,12 +250,12 @@ export default function GameBoard({
           </div>
         </header>
 
-        <DinoTrack
-          dino={dino}
+        <AnimalTrack
+          animal={animal}
           food={food}
           step={step}
           goal={JOURNEY_GOAL}
-          scale={dinoScale(round)}
+          scale={animalScale(round)}
           feasting={feasting}
         />
       </div>
@@ -258,9 +288,9 @@ export default function GameBoard({
           <div className="flex items-end justify-center gap-1">
             <span
               className="animate-float leading-none drop-shadow-lg"
-              style={{ fontSize: `${3.75 * dinoScale(round)}rem` }}
+              style={{ fontSize: `${3.75 * animalScale(round)}rem` }}
             >
-              {dino.emoji}
+              {animal.emoji}
             </span>
             <div className="relative rounded-3xl rounded-bl-md bg-white/90 px-6 py-4 shadow-lg">
               <span className="block text-6xl leading-none sm:text-7xl">{hintEmoji}</span>
