@@ -287,17 +287,13 @@ export default function GameBoard({
         </section>
       ) : (
         <section className="relative z-10 flex w-full max-w-md min-h-0 flex-1 flex-col items-center justify-center gap-5 py-2">
-          {/* 아기공룡이 말풍선으로 힌트 그림을 보여준다 (글자는 숨긴다) */}
-          <div className="flex items-end justify-center gap-1">
-            <span
-              className="animate-float leading-none drop-shadow-lg"
-              style={{ fontSize: `${3 * animalScale(round)}rem` }}
-            >
-              {animal.emoji}
-            </span>
-            <div className="relative rounded-3xl rounded-bl-md bg-white/90 px-6 py-4 shadow-lg">
-              <span className="block text-6xl leading-none sm:text-7xl">{hintEmoji}</span>
-            </div>
+          {/*
+            찾아야 할 것을 그림으로만 보여준다 (글자는 숨긴다).
+            친구는 위쪽 길에 이미 있으므로 여기서는 빼서, 아이가 그림 하나에만
+            집중할 수 있게 한다.
+          */}
+          <div className="rounded-3xl bg-white/90 px-8 py-5 shadow-lg">
+            <span className="block text-7xl leading-none sm:text-8xl">{hintEmoji}</span>
           </div>
 
           <button

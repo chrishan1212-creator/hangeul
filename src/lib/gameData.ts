@@ -26,7 +26,7 @@ const SYLLABLES_NO_BATCHIM: QuizItem[] = [
   { display: "쥐", spoken: "쥐", emoji: "🐭" },
   { display: "초", spoken: "초", emoji: "🕯️" },
   { display: "뼈", spoken: "뼈", emoji: "🦴" },
-  { display: "파", spoken: "파", emoji: "🧅" },
+  { display: "귀", spoken: "귀", emoji: "👂" },
 ];
 
 /** 한 글자 - 받침 있는 글자들 (난이도 옵션으로 켜고 끌 수 있다) */
@@ -99,7 +99,7 @@ const WORDS_TWO: QuizItem[] = [
   { display: "구름", spoken: "구름", emoji: "☁️" },
   { display: "사탕", spoken: "사탕", emoji: "🍬" },
   { display: "과자", spoken: "과자", emoji: "🍪" },
-  { display: "김밥", spoken: "김밥", emoji: "🍙" },
+  { display: "만두", spoken: "만두", emoji: "🥟" },
   { display: "라면", spoken: "라면", emoji: "🍜" },
   { display: "피자", spoken: "피자", emoji: "🍕" },
   { display: "치킨", spoken: "치킨", emoji: "🍗" },
