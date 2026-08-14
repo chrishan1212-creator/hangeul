@@ -35,8 +35,20 @@ interface GameBoardProps {
   onExit: () => void;
 }
 
-/** 축하 순서가 끝나지 않아도 이 시간이 지나면 '다음' 버튼을 보여준다 */
-const NEXT_BUTTON_FALLBACK_MS = 12000;
+/** 어떤 이유로든 축하 순서가 끝나지 않을 때, 이 시간이 지나면 그냥 다음 문제로 넘어간다 */
+const CELEBRATION_TIMEOUT_MS = 15000;
+
+/**
+ * 읽어주기가 꺼져 있으면 축하 순서가 순식간에 끝나버린다.
+ * 아이가 글자를 볼 시간은 확보해야 하므로 최소 이만큼은 보여준다.
+ */
+const MIN_CELEBRATION_MS = 2600;
+
+/** 다 읽어준 뒤 다음 문제로 넘어가기 전 쉬는 시간 */
+const NEXT_PAUSE_MS = 1200;
+
+/** 밥을 먹은 뒤에는 조금 더 여운을 준다 */
+const FEAST_PAUSE_MS = 2200;
 
 /**
  * 화면이 바뀌자마자 소리가 나오면 아이가 앞부분을 놓치므로,
@@ -58,7 +70,6 @@ export default function GameBoard({
   const [wrongDisplay, setWrongDisplay] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [confettiKey, setConfettiKey] = useState(0);
-  const [showNext, setShowNext] = useState(false);
 
   // 같은 친구가 따라다니며 밥을 먹을 때마다 자라고, 다 자라면 새 친구가 온다
   const [animal, setAnimal] = useState<AnimalInfo>(() => randomAnimal());
@@ -118,7 +129,6 @@ export default function GameBoard({
 
     setQuestion(q);
     setCelebrating(false);
-    setShowNext(false);
     setWrongDisplay(null);
 
     cancelSpeech();
@@ -138,6 +148,10 @@ export default function GameBoard({
     }, QUESTION_DELAY_MS);
   }, [pool, choiceCount, mode]);
 
+  // celebrate 안에서 다음 문제로 넘어가기 위해 최신 함수를 ref 로 들고 있는다
+  const nextQuestionRef = useRef(nextQuestion);
+  nextQuestionRef.current = nextQuestion;
+
   useEffect(() => {
     unlockAudio();
     nextQuestion();
@@ -155,9 +169,13 @@ export default function GameBoard({
       const token = ++sequenceRef.current;
       const stillActive = () => sequenceRef.current === token;
 
-      const fallback = setTimeout(() => {
-        if (stillActive()) setShowNext(true);
-      }, NEXT_BUTTON_FALLBACK_MS);
+      const startedAt = Date.now();
+      const goNext = () => {
+        if (stillActive()) nextQuestionRef.current();
+      };
+
+      // 축하 순서가 어딘가에서 멈추더라도 놀이가 끊기지 않도록 안전장치를 둔다
+      const timeout = setTimeout(goNext, CELEBRATION_TIMEOUT_MS);
 
       try {
         await delay(CELEBRATION_DELAY_MS);
@@ -187,8 +205,14 @@ export default function GameBoard({
           await speak(buildFeastLine(currentFood));
         }
       } finally {
-        clearTimeout(fallback);
-        if (stillActive()) setShowNext(true);
+        clearTimeout(timeout);
+        if (stillActive()) {
+          // 글자를 볼 시간을 최소한 확보한 뒤, 잠깐 쉬었다가 다음 문제로 넘어간다
+          const shown = Date.now() - startedAt;
+          const pause = reachedGoal ? FEAST_PAUSE_MS : NEXT_PAUSE_MS;
+          const wait = Math.max(pause, MIN_CELEBRATION_MS - shown);
+          setTimeout(goNext, wait);
+        }
       }
     },
     []
@@ -325,22 +349,6 @@ export default function GameBoard({
         </section>
       )}
 
-      {/* 축하할 때만 자리를 차지한다. 문제 화면에서는 그만큼 카드에 자리를 내준다. */}
-      <footer
-        className={`relative z-20 flex w-full max-w-md shrink-0 flex-col items-center justify-center ${
-          celebrating ? "h-20" : "h-0"
-        }`}
-      >
-        {celebrating && showNext && (
-          <button
-            type="button"
-            onClick={nextQuestion}
-            className="animate-pop-in rounded-full bg-gradient-to-br from-candy-green to-candy-blue px-10 py-4 font-jua text-3xl text-white shadow-[0_8px_0_rgba(0,0,0,0.15)] transition active:translate-y-1.5 active:shadow-[0_3px_0_rgba(0,0,0,0.15)]"
-          >
-            다음 ➡️
-          </button>
-        )}
-      </footer>
     </>
   );
 }
