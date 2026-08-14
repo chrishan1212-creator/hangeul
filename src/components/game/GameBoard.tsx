@@ -31,6 +31,7 @@ import { fillWidthFontSize } from "@/lib/textSize";
 interface GameBoardProps {
   mode: GameMode;
   includeBatchim: boolean;
+  comboVowel: string;
   choiceCount: number;
   onExit: () => void;
 }
@@ -62,6 +63,7 @@ const CELEBRATION_DELAY_MS = 1400;
 export default function GameBoard({
   mode,
   includeBatchim,
+  comboVowel,
   choiceCount,
   onExit,
 }: GameBoardProps) {
@@ -92,7 +94,10 @@ export default function GameBoard({
   // 여행이 끝나서 다음 문제 때 새 공룡으로 바꿔야 하는지
   const journeyDoneRef = useRef(false);
 
-  const pool = useMemo(() => getPool(mode, includeBatchim), [mode, includeBatchim]);
+  const pool = useMemo(
+    () => getPool(mode, includeBatchim, comboVowel),
+    [mode, includeBatchim, comboVowel]
+  );
   const letterMode = isLetterMode(mode);
 
   /** 지금 바로 공룡 대사를 들려준다 (다시 듣기 버튼용) */
@@ -180,7 +185,8 @@ export default function GameBoard({
       try {
         await delay(CELEBRATION_DELAY_MS);
         if (!stillActive()) return;
-        await speak(target.spoken);
+        // 가나다 놀이는 자음과 모음이 만나 글자가 되는 걸 짚어준다
+        await speak(target.celebrateLine ?? target.spoken);
         if (!stillActive()) return;
 
         await delay(250);
@@ -248,7 +254,7 @@ export default function GameBoard({
   };
 
   const target = question?.target;
-  const showSubtitle = !!target && target.display !== target.spoken;
+  const subtitle = target?.note ?? (target && target.display !== target.spoken ? target.spoken : null);
   // 그림 힌트: 글자를 배우는 모드에는 그림이 없으니 물음표를 보여준다
   const hintEmoji = letterMode ? "❓" : target?.emoji ?? "❓";
 
@@ -300,9 +306,9 @@ export default function GameBoard({
           >
             {target.display}
           </div>
-          {showSubtitle && (
+          {subtitle && (
             <div className="font-jua text-3xl text-white/90 drop-shadow sm:text-4xl">
-              {target.spoken}
+              {subtitle}
             </div>
           )}
           <p className="font-jua text-2xl text-candy-yellow drop-shadow sm:text-3xl">

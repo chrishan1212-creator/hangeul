@@ -1,6 +1,13 @@
 import { buildDinoLineParts, getWordCategory } from "./dinoLines";
+import {
+  ALL_VOWELS,
+  buildComboCelebrateLine,
+  buildComboNote,
+  buildComboPromptParts,
+  getComboEntries,
+} from "./syllableCombos";
 
-export type GameMode = "syllable" | "word2" | "consonant" | "vowel";
+export type GameMode = "syllable" | "word2" | "combo" | "consonant" | "vowel";
 
 export interface QuizItem {
   /** 화면의 카드에 보여줄 글자 (예: "배", "ㄱ") */
@@ -9,6 +16,12 @@ export interface QuizItem {
   spoken: string;
   /** 정답 축하 화면에 함께 보여줄 이모지 (자음/모음에는 없음) */
   emoji?: string;
+  /** 축하할 때 대신 들려줄 말 (가나다 놀이에서 자음+모음을 짚어줄 때 쓴다) */
+  celebrateLine?: string;
+  /** 축하 화면에 글자 아래로 함께 보여줄 설명 (예: "ㅁ + ㅏ · 마늘") */
+  note?: string;
+  /** 문제 대사를 따로 정해야 할 때 (없으면 분류별 기본 대사를 쓴다) */
+  promptParts?: string[];
 }
 
 /** 한 글자 - 받침 없는 쉬운 글자들 */
@@ -161,12 +174,29 @@ export interface ModeInfo {
 export const MODE_LIST: ModeInfo[] = [
   { mode: "syllable", icon: "🍎", title: "한 글자", sample: "새 · 밤 · 손" },
   { mode: "word2", icon: "🦁", title: "두 글자", sample: "사자 · 악어" },
+  { mode: "combo", icon: "가", title: "가나다", sample: "ㄱ+ㅏ = 가" },
   { mode: "consonant", icon: "ㄱ", title: "자음", sample: "ㄱ · ㄴ · ㄷ" },
   { mode: "vowel", icon: "ㅏ", title: "모음", sample: "ㅏ · ㅑ · ㅓ" },
 ];
 
-/** 모드(와 받침 옵션)에 맞는 문제 풀을 돌려준다 */
-export function getPool(mode: GameMode, includeBatchim: boolean): QuizItem[] {
+/** 가나다 놀이의 글자들을 문제 형태로 바꾼다 */
+function buildComboPool(vowel: string): QuizItem[] {
+  return getComboEntries(vowel).map((entry) => ({
+    display: entry.syllable,
+    spoken: entry.syllable,
+    emoji: entry.emoji,
+    promptParts: buildComboPromptParts(entry),
+    celebrateLine: buildComboCelebrateLine(entry),
+    note: buildComboNote(entry),
+  }));
+}
+
+/** 모드(와 난이도 옵션)에 맞는 문제 풀을 돌려준다 */
+export function getPool(
+  mode: GameMode,
+  includeBatchim: boolean,
+  comboVowel: string = ALL_VOWELS
+): QuizItem[] {
   switch (mode) {
     case "syllable":
       return includeBatchim
@@ -174,6 +204,8 @@ export function getPool(mode: GameMode, includeBatchim: boolean): QuizItem[] {
         : SYLLABLES_NO_BATCHIM;
     case "word2":
       return WORDS_TWO;
+    case "combo":
+      return buildComboPool(comboVowel);
     case "consonant":
       return CONSONANTS;
     case "vowel":
@@ -191,6 +223,9 @@ export function isLetterMode(mode: GameMode): boolean {
  * 예: 코 -> ["나 지금 ", "코", "가 아파! ", "코", "는 어디 있을까?"]
  */
 export function buildPromptParts(mode: GameMode, item: QuizItem): string[] {
+  // 가나다 놀이처럼 대사가 따로 정해진 문제는 그걸 그대로 쓴다
+  if (item.promptParts) return item.promptParts;
+
   const category = getWordCategory(item.spoken, isLetterMode(mode));
   return buildDinoLineParts(item.spoken, category);
 }

@@ -5,6 +5,7 @@ import PlayShell from "@/components/PlayShell";
 import GameBoard from "./GameBoard";
 import SettingsButton from "@/components/SettingsButton";
 import { GameMode, MODE_LIST } from "@/lib/gameData";
+import { ALL_VOWELS, COMBO_VOWELS } from "@/lib/syllableCombos";
 import { unlockAudio } from "@/lib/sfx";
 import { primeSpeech } from "@/lib/speech";
 
@@ -16,6 +17,7 @@ export default function GamePlay({ onHome }: GamePlayProps) {
   const [mode, setMode] = useState<GameMode | null>(null);
   const [includeBatchim, setIncludeBatchim] = useState(false);
   const [choiceCount, setChoiceCount] = useState(4);
+  const [comboVowel, setComboVowel] = useState<string>(ALL_VOWELS);
 
   const startGame = (selected: GameMode) => {
     // 아이폰은 화면을 터치한 순간에만 소리를 열 수 있다.
@@ -32,6 +34,7 @@ export default function GamePlay({ onHome }: GamePlayProps) {
         <GameBoard
           mode={mode}
           includeBatchim={includeBatchim}
+          comboVowel={comboVowel}
           choiceCount={choiceCount}
           onExit={() => setMode(null)}
         />
@@ -90,6 +93,32 @@ export default function GamePlay({ onHome }: GamePlayProps) {
             </span>
             <span className="font-jua text-lg">{includeBatchim ? "✅ 켜짐" : "⬜️ 꺼짐"}</span>
           </button>
+
+          <div className="rounded-2xl bg-white/80 px-4 py-3">
+            <span className="font-jua text-base text-slate-700">
+              가나다 모음 고르기
+              <span className="block text-xs text-slate-400">
+                가나다 모드 · 고른 모음이 붙은 글자만 나와요
+              </span>
+            </span>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {[ALL_VOWELS, ...COMBO_VOWELS].map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setComboVowel(v)}
+                  aria-pressed={comboVowel === v}
+                  className={`h-11 min-w-[2.75rem] rounded-full px-3 font-jua text-lg transition ${
+                    comboVowel === v
+                      ? "bg-candy-purple text-white"
+                      : "bg-slate-200 text-slate-600"
+                  }`}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div className="flex items-center justify-between rounded-2xl bg-white/80 px-4 py-3">
             <span className="font-jua text-base text-slate-700">
