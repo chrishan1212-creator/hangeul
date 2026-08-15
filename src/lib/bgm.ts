@@ -25,6 +25,14 @@ let duckDepth = 0;
 
 // ── 음악 파일 재생용 ──────────────────────────────────────────────
 let audioEl: HTMLAudioElement | null = null;
+/**
+ * iOS(Safari)는 audio 요소의 volume 을 코드로 바꾸는 걸 무시한다.
+ * (볼륨은 기기의 물리 버튼으로만 조절하도록 막혀 있다)
+ * 그래서 소리를 Web Audio 로 한 번 통과시키고, 그쪽 음량을 조절한다.
+ * 이렇게 하면 아이폰에서도 설정의 음량 조절이 실제로 먹는다.
+ */
+let mediaSource: MediaElementAudioSourceNode | null = null;
+let fileGain: GainNode | null = null;
 let playlist: string[] = [];
 let trackIndex = 0;
 let positionTimer: number | null = null;
@@ -79,15 +87,38 @@ function duckMultiplier(): number {
   return duckDepth > 0 ? DUCK_RATIO : 1;
 }
 
+/** audio 요소의 소리를 Web Audio 로 끌어와 음량을 조절할 수 있게 한다 */
+function connectFileGraph(): void {
+  if (mediaSource || !audioEl) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  try {
+    mediaSource = ctx.createMediaElementSource(audioEl);
+    fileGain = ctx.createGain();
+    fileGain.gain.value = 0;
+    mediaSource.connect(fileGain);
+    fileGain.connect(ctx.destination);
+  } catch {
+    // 연결에 실패하면 예전처럼 audio 요소의 volume 을 쓴다
+    mediaSource = null;
+    fileGain = null;
+  }
+}
+
 function applyVolume(): void {
   const settings = getSettings();
   const on = settings.bgm ? 1 : 0;
+  const ctx = getAudioContext();
+  const fileTarget = Math.min(1, settings.bgmVolume * FILE_BASE_VOLUME * duckMultiplier() * on);
 
-  if (audioEl) {
-    audioEl.volume = Math.min(1, settings.bgmVolume * FILE_BASE_VOLUME * duckMultiplier() * on);
+  if (fileGain && ctx) {
+    fileGain.gain.setTargetAtTime(fileTarget, ctx.currentTime, 0.15);
+    if (audioEl) audioEl.volume = 1;
+  } else if (audioEl) {
+    audioEl.volume = fileTarget;
   }
 
-  const ctx = getAudioContext();
   if (ctx && master) {
     const target = settings.bgmVolume * SYNTH_BASE_VOLUME * duckMultiplier() * on;
     // 뚝 끊기지 않고 부드럽게 바뀌도록
@@ -167,6 +198,9 @@ function startFileBgm(): void {
   // 브라우저가 거부하는데, 그때 running 을 켜버리면 정작 첫 터치 때
   // "이미 재생 중"으로 보여 재시도가 무시된다.
   if (!isAudioUnlocked()) return;
+
+  // 터치로 오디오가 열린 뒤에야 Web Audio 에 연결할 수 있다
+  connectFileGraph();
 
   running = true;
   applyVolume();

@@ -9,15 +9,21 @@ export interface Settings {
   bgmVolume: number;
   /** 효과음(팡파레 등) 켜기 */
   sfx: boolean;
+  /** 효과음 크기 (0 ~ 1) */
+  sfxVolume: number;
   /** 읽어주기(목소리) 켜기 */
   voice: boolean;
+  /** 읽어주기 크기 (0 ~ 1) */
+  voiceVolume: number;
 }
 
 const DEFAULTS: Settings = {
   bgm: true,
   bgmVolume: 0.4,
   sfx: true,
+  sfxVolume: 0.7,
   voice: true,
+  voiceVolume: 1,
 };
 
 const STORAGE_KEY = "hangeul-settings";

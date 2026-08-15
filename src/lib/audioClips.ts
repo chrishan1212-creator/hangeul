@@ -1,4 +1,5 @@
 import manifest from "./audioManifest.json";
+import { getSettings } from "./settings";
 
 const clips: Record<string, string> = manifest;
 
@@ -39,6 +40,7 @@ export function playClip(url: string): Promise<void> {
     stopClip();
 
     const audio = new Audio(url);
+    audio.volume = getSettings().voiceVolume;
     currentAudio = audio;
 
     let settled = false;

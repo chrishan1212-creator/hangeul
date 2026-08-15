@@ -4,11 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Confetti from "@/components/Confetti";
 import ChoiceTile from "./ChoiceTile";
 import AnimalTrack from "./AnimalTrack";
+import LetterBuilder from "./LetterBuilder";
 import SettingsButton from "@/components/SettingsButton";
 import {
   GameMode,
   Question,
   QuizItem,
+  buildLetterChoices,
   getPool,
   isLetterMode,
   makeQuestion,
@@ -74,7 +76,8 @@ export default function GameBoard({
   const [confettiKey, setConfettiKey] = useState(0);
 
   // 같은 친구가 따라다니며 밥을 먹을 때마다 자라고, 다 자라면 새 친구가 온다
-  const [animal, setAnimal] = useState<AnimalInfo>(() => randomAnimal());
+  const buildMode = mode === "build";
+  const [animal, setAnimal] = useState<AnimalInfo>(() => randomAnimal(undefined, mode === "build"));
   const [round, setRound] = useState(0);
   const [food, setFood] = useState<FoodItem>(() => randomFood(animal.diet));
   const [step, setStep] = useState(0);
@@ -117,7 +120,7 @@ export default function GameBoard({
       const nextRound = roundRef.current + 1;
 
       if (nextRound > MAX_GROWTH_ROUND) {
-        newFriend = randomAnimal(animalRef.current.name);
+        newFriend = randomAnimal(animalRef.current.name, buildMode);
         setAnimal(newFriend);
         setRound(0);
         setFood(randomFood(newFriend.diet));
@@ -151,7 +154,7 @@ export default function GameBoard({
         await speakPhrase(q.lineParts);
       })();
     }, QUESTION_DELAY_MS);
-  }, [pool, choiceCount, mode]);
+  }, [pool, choiceCount, mode, buildMode]);
 
   // celebrate 안에서 다음 문제로 넘어가기 위해 최신 함수를 ref 로 들고 있는다
   const nextQuestionRef = useRef(nextQuestion);
@@ -224,23 +227,29 @@ export default function GameBoard({
     []
   );
 
+  const handleCorrect = useCallback(() => {
+    if (!question || celebrating) return;
+
+    const nextStep = step + 1;
+    const reachedGoal = nextStep >= JOURNEY_GOAL;
+
+    cancelSpeech();
+    playCorrect();
+    setCelebrating(true);
+    setWrongDisplay(null);
+    setScore((s) => s + 1);
+    setConfettiKey((k) => k + 1);
+    setStep(nextStep);
+    if (reachedGoal) journeyDoneRef.current = true;
+
+    void celebrate(question.target, reachedGoal, food);
+  }, [question, celebrating, step, food, celebrate]);
+
   const handleChoice = (item: QuizItem) => {
     if (!question || celebrating) return;
 
     if (item.display === question.target.display) {
-      const nextStep = step + 1;
-      const reachedGoal = nextStep >= JOURNEY_GOAL;
-
-      cancelSpeech();
-      playCorrect();
-      setCelebrating(true);
-      setWrongDisplay(null);
-      setScore((s) => s + 1);
-      setConfettiKey((k) => k + 1);
-      setStep(nextStep);
-      if (reachedGoal) journeyDoneRef.current = true;
-
-      void celebrate(question.target, reachedGoal, food);
+      handleCorrect();
     } else {
       playWrong();
       setWrongDisplay(item.display);
@@ -252,6 +261,14 @@ export default function GameBoard({
     if (!question || celebrating) return;
     askNow(question);
   };
+
+  const letterChoices = useMemo(
+    () =>
+      buildMode && question
+        ? buildLetterChoices(question.target.display, choiceCount)
+        : { consonants: [], vowels: [] },
+    [buildMode, question, choiceCount]
+  );
 
   const target = question?.target;
   const subtitle = target?.note ?? (target && target.display !== target.spoken ? target.spoken : null);
@@ -317,41 +334,64 @@ export default function GameBoard({
         </section>
       ) : (
         <section className="relative z-10 flex w-full max-w-md min-h-0 flex-1 flex-col items-center justify-center gap-5 py-2">
-          {/*
-            찾아야 할 것을 그림으로만 보여준다 (글자는 숨긴다).
-            친구는 위쪽 길에 이미 있으므로 여기서는 빼서, 아이가 그림 하나에만
-            집중할 수 있게 한다.
-          */}
-          <div className="rounded-3xl bg-white/90 px-8 py-5 shadow-lg">
-            <span className="block text-7xl leading-none sm:text-8xl">{hintEmoji}</span>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleRepeat}
-            className="rounded-full bg-white/30 px-5 py-2 font-jua text-lg text-white backdrop-blur-sm transition hover:bg-white/40"
-          >
-            🔁 다시 듣기
-          </button>
-
-          <div
-            className="grid w-full min-h-0 flex-1 gap-3"
-            style={{
-              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-              gridTemplateRows: `repeat(${Math.ceil(choiceCount / 2)}, minmax(0, 1fr))`,
-              maxHeight: "58dvh",
-            }}
-          >
-            {question?.choices.map((choice) => (
-              <ChoiceTile
-                key={choice.display}
-                label={choice.display}
-                wrong={wrongDisplay === choice.display}
+          {buildMode && question ? (
+            <>
+              <LetterBuilder
+                syllable={question.target.display}
+                emoji={question.target.emoji ?? "❓"}
+                consonantChoices={letterChoices.consonants}
+                vowelChoices={letterChoices.vowels}
+                onComplete={handleCorrect}
+                onMistake={playWrong}
                 disabled={celebrating}
-                onClick={() => handleChoice(choice)}
               />
-            ))}
-          </div>
+              <button
+                type="button"
+                onClick={handleRepeat}
+                className="rounded-full bg-white/30 px-5 py-2 font-jua text-lg text-white backdrop-blur-sm transition hover:bg-white/40"
+              >
+                🔁 다시 듣기
+              </button>
+            </>
+          ) : (
+            <>
+              {/*
+                찾아야 할 것을 그림으로만 보여준다 (글자는 숨긴다).
+                친구는 위쪽 길에 이미 있으므로 여기서는 빼서, 아이가 그림 하나에만
+                집중할 수 있게 한다.
+              */}
+              <div className="rounded-3xl bg-white/90 px-8 py-5 shadow-lg">
+                <span className="block text-7xl leading-none sm:text-8xl">{hintEmoji}</span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleRepeat}
+                className="rounded-full bg-white/30 px-5 py-2 font-jua text-lg text-white backdrop-blur-sm transition hover:bg-white/40"
+              >
+                🔁 다시 듣기
+              </button>
+
+              <div
+                className="grid w-full min-h-0 flex-1 gap-3"
+                style={{
+                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                  gridTemplateRows: `repeat(${Math.ceil(choiceCount / 2)}, minmax(0, 1fr))`,
+                  maxHeight: "58dvh",
+                }}
+              >
+                {question?.choices.map((choice) => (
+                  <ChoiceTile
+                    key={choice.display}
+                    label={choice.display}
+                    wrong={wrongDisplay === choice.display}
+                    disabled={celebrating}
+                    onClick={() => handleChoice(choice)}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </section>
       )}
 

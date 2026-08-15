@@ -33,7 +33,7 @@ function bell(ctx: AudioContext, freq: number, startAt: number, duration: number
     gain.gain.exponentialRampToValueAtTime(0.0001, startAt + life);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(getSfxOutput(ctx));
     osc.start(startAt);
     osc.stop(startAt + life + 0.05);
   }
@@ -58,9 +58,24 @@ function softTone(
   gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
 
   osc.connect(gain);
-  gain.connect(ctx.destination);
+  gain.connect(getSfxOutput(ctx));
   osc.start(startAt);
   osc.stop(startAt + duration + 0.05);
+}
+
+/**
+ * 효과음이 지나가는 길. 여기 음량을 조절하면 설정의 "효과음 크기"가 먹는다.
+ * (기기에 따라 audio 요소의 volume 은 안 먹히지만 Web Audio 게인은 항상 먹는다)
+ */
+let sfxGain: GainNode | null = null;
+
+function getSfxOutput(ctx: AudioContext): AudioNode {
+  if (!sfxGain) {
+    sfxGain = ctx.createGain();
+    sfxGain.connect(ctx.destination);
+  }
+  sfxGain.gain.value = getSettings().sfxVolume;
+  return sfxGain;
 }
 
 /** 효과음을 낼 수 있는 상태면 오디오 장치를 돌려준다 */

@@ -42,6 +42,33 @@ function ToggleRow({ emoji, label, hint, on, onChange }: ToggleRowProps) {
   );
 }
 
+interface VolumeRowProps {
+  id: string;
+  label: string;
+  value: number;
+  onChange: (next: number) => void;
+}
+
+function VolumeRow({ id, label, value, onChange }: VolumeRowProps) {
+  return (
+    <div className="rounded-2xl bg-white/85 px-4 py-3">
+      <label htmlFor={id} className="font-jua text-base text-slate-700">
+        {label}
+      </label>
+      <input
+        id={id}
+        type="range"
+        min={0}
+        max={1}
+        step={0.1}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="mt-2 w-full accent-candy-purple"
+      />
+    </div>
+  );
+}
+
 export default function SettingsButton() {
   const [open, setOpen] = useState(false);
   const [showVoiceCheck, setShowVoiceCheck] = useState(false);
@@ -142,26 +169,12 @@ export default function SettingsButton() {
               />
 
               {settings.bgm && (
-                <div className="rounded-2xl bg-white/85 px-4 py-3">
-                  <label
-                    htmlFor="bgm-volume"
-                    className="font-jua text-base text-slate-700"
-                  >
-                    🔉 음악 크기
-                  </label>
-                  <input
-                    id="bgm-volume"
-                    type="range"
-                    min={0.1}
-                    max={1}
-                    step={0.1}
-                    value={settings.bgmVolume}
-                    onChange={(e) =>
-                      updateSettings({ bgmVolume: Number(e.target.value) })
-                    }
-                    className="mt-2 w-full accent-candy-purple"
-                  />
-                </div>
+                <VolumeRow
+                  id="bgm-volume"
+                  label="🔉 음악 크기"
+                  value={settings.bgmVolume}
+                  onChange={(v) => updateSettings({ bgmVolume: v })}
+                />
               )}
 
               <ToggleRow
@@ -172,6 +185,15 @@ export default function SettingsButton() {
                 onChange={(next) => updateSettings({ sfx: next })}
               />
 
+              {settings.sfx && (
+                <VolumeRow
+                  id="sfx-volume"
+                  label="🔉 효과음 크기"
+                  value={settings.sfxVolume}
+                  onChange={(v) => updateSettings({ sfxVolume: v })}
+                />
+              )}
+
               <ToggleRow
                 emoji="🗣️"
                 label="읽어주기"
@@ -179,6 +201,15 @@ export default function SettingsButton() {
                 on={settings.voice}
                 onChange={(next) => updateSettings({ voice: next })}
               />
+
+              {settings.voice && (
+                <VolumeRow
+                  id="voice-volume"
+                  label="🔉 목소리 크기"
+                  value={settings.voiceVolume}
+                  onChange={(v) => updateSettings({ voiceVolume: v })}
+                />
+              )}
 
               {koreanVoiceMissing && (
                 <div className="rounded-2xl bg-amber-50 px-4 py-3">

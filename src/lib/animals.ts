@@ -100,14 +100,28 @@ const TREATS: FoodItem[] = [
   { emoji: "🍠", name: "고구마" },
 ];
 
+/**
+ * 글자 만들기 놀이에서만 나오는 친구들.
+ * 아이가 좋아하는 공룡·자동차·로봇으로만 골랐다.
+ */
+const BUILD_FRIENDS: AnimalInfo[] = [
+  { emoji: "🦖", name: "공룡", diet: "omnivore" },
+  { emoji: "🚗", name: "자동차", diet: "omnivore" },
+  { emoji: "🤖", name: "로봇", diet: "omnivore" },
+];
+
 function pick<T>(items: T[]): T {
   return items[Math.floor(Math.random() * items.length)];
 }
 
-/** 새 친구를 데려온다. 직전 친구와는 다른 동물로 고른다. */
-export function randomAnimal(avoidName?: string): AnimalInfo {
-  const candidates = avoidName ? ANIMALS.filter((a) => a.name !== avoidName) : ANIMALS;
-  return pick(candidates.length > 0 ? candidates : ANIMALS);
+/**
+ * 새 친구를 데려온다. 직전 친구와는 다른 친구로 고른다.
+ * buildOnly 를 켜면 공룡·자동차·로봇 중에서만 고른다.
+ */
+export function randomAnimal(avoidName?: string, buildOnly = false): AnimalInfo {
+  const source = buildOnly ? BUILD_FRIENDS : ANIMALS;
+  const candidates = avoidName ? source.filter((a) => a.name !== avoidName) : source;
+  return pick(candidates.length > 0 ? candidates : source);
 }
 
 /** 이번 여행의 목적지 음식. 직전에 먹은 것과 겹치지 않게 고른다. */

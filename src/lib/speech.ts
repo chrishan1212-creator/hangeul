@@ -221,6 +221,7 @@ function speakNowWithTts(
       utterance.lang = "ko-KR";
       utterance.rate = rate;
       utterance.pitch = pitch;
+      utterance.volume = getSettings().voiceVolume;
 
       if (withVoice) {
         const voice = getKoreanVoice();

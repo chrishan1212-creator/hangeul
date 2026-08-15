@@ -1,3 +1,4 @@
+import { objectParticle, splitSyllable } from "./korean";
 import { buildDinoLineParts, getWordCategory } from "./dinoLines";
 import {
   ALL_VOWELS,
@@ -7,7 +8,7 @@ import {
   getComboEntries,
 } from "./syllableCombos";
 
-export type GameMode = "syllable" | "word2" | "combo" | "consonant" | "vowel";
+export type GameMode = "syllable" | "word2" | "combo" | "build" | "consonant" | "vowel";
 
 export interface QuizItem {
   /** 화면의 카드에 보여줄 글자 (예: "배", "ㄱ") */
@@ -175,20 +176,57 @@ export const MODE_LIST: ModeInfo[] = [
   { mode: "syllable", icon: "🍎", title: "한 글자", sample: "새 · 밤 · 손" },
   { mode: "word2", icon: "🦁", title: "두 글자", sample: "사자 · 악어" },
   { mode: "combo", icon: "가", title: "가나다", sample: "ㄱ+ㅏ = 가" },
+  { mode: "build", icon: "🧩", title: "글자 만들기", sample: "끌어서 ㄱ+ㅏ" },
   { mode: "consonant", icon: "ㄱ", title: "자음", sample: "ㄱ · ㄴ · ㄷ" },
   { mode: "vowel", icon: "ㅏ", title: "모음", sample: "ㅏ · ㅑ · ㅓ" },
 ];
 
-/** 가나다 놀이의 글자들을 문제 형태로 바꾼다 */
-function buildComboPool(vowel: string): QuizItem[] {
+/** 글자 만들기 놀이에서 끌어다 쓸 수 있는 낱자들 */
+const BASIC_CONSONANTS = "ㄱㄴㄷㄹㅁㅂㅅㅇㅈㅊㅋㅌㅍㅎ".split("");
+const BASIC_VOWELS = "ㅏㅑㅓㅕㅗㅛㅜㅠㅡㅣ".split("");
+
+/**
+ * 가나다 놀이의 글자들을 문제 형태로 바꾼다.
+ * forBuilding 을 켜면 "만들어보자!" 로 물어본다 (끌어서 만드는 놀이).
+ */
+function buildComboPool(vowel: string, forBuilding = false): QuizItem[] {
   return getComboEntries(vowel).map((entry) => ({
     display: entry.syllable,
     spoken: entry.syllable,
     emoji: entry.emoji,
-    promptParts: buildComboPromptParts(entry),
+    promptParts: forBuilding
+      ? [
+          entry.word,
+          " 할 때 ",
+          entry.syllable,
+          `${objectParticle(entry.syllable)} 만들어보자!`,
+        ]
+      : buildComboPromptParts(entry),
     celebrateLine: buildComboCelebrateLine(entry),
     note: buildComboNote(entry),
   }));
+}
+
+/** 끌어다 쓸 낱자 목록을 만든다. 정답 낱자에 가짜 낱자를 섞는다. */
+export function buildLetterChoices(
+  syllable: string,
+  count: number
+): { consonants: string[]; vowels: string[] } {
+  const parts = splitSyllable(syllable);
+  if (!parts) return { consonants: [], vowels: [] };
+
+  const take = (all: string[], answer: string) => {
+    const others = shuffle(all.filter((letter) => letter !== answer)).slice(
+      0,
+      Math.max(0, count - 1)
+    );
+    return shuffle([answer, ...others]);
+  };
+
+  return {
+    consonants: take(BASIC_CONSONANTS, parts.consonant),
+    vowels: take(BASIC_VOWELS, parts.vowel),
+  };
 }
 
 /** 모드(와 난이도 옵션)에 맞는 문제 풀을 돌려준다 */
@@ -206,6 +244,8 @@ export function getPool(
       return WORDS_TWO;
     case "combo":
       return buildComboPool(comboVowel);
+    case "build":
+      return buildComboPool(comboVowel, true);
     case "consonant":
       return CONSONANTS;
     case "vowel":
