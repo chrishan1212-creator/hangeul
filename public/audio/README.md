@@ -14,25 +14,63 @@
 ## A. 좋은 TTS로 자동 생성 (권장)
 
 앱이 말하는 문장은 **334개, 2,745자**로 정해져 있어서 한 번만 만들어두면 됩니다.
-구글 TTS 무료 한도(월 10만 자)의 **2.7%** 라 사실상 무료예요.
+구글 TTS 무료 한도(Neural2 기준 월 100만 자)에 한참 못 미치는 양이라
+사실상 무료예요.
+
+### 1) 구글 클라우드에서 API 키 만들기 (5분)
+
+1. [console.cloud.google.com](https://console.cloud.google.com) 접속 →
+   위쪽에서 **프로젝트 만들기** (이름은 아무거나, 예: `hangeul-tts`)
+2. **결제 사용 설정** — 무료 한도 안에서만 써도 카드 등록은 필요합니다.
+   (신규 가입 시 $300 크레딧도 함께 받습니다)
+3. 검색창에 `Text-to-Speech` → **Cloud Text-to-Speech API** → **사용 설정**
+4. 좌측 메뉴 **API 및 서비스 → 사용자 인증 정보 →
+   사용자 인증 정보 만들기 → API 키** → 나온 키를 복사
+5. (권장) 그 키의 **키 제한 → API 제한 → Cloud Text-to-Speech API** 만 체크
+
+> ⚠️ API 키는 **절대 코드나 깃에 넣지 마세요.** 아래처럼 명령어 앞에만 붙입니다.
+
+### 2) 음성 파일 만들기
 
 ```bash
-npm run audio:tts -- --dry          # 무엇이 만들어질지 미리 보기
-GOOGLE_TTS_API_KEY=키 npm run audio:tts   # 실제 생성
+git pull
+npm install
+
+npm run audio:tts -- --dry                    # 무엇이 만들어질지 미리 보기
+GOOGLE_TTS_API_KEY=붙여넣은키 npm run audio:tts   # 실제 생성 (1~2분)
 ```
 
-1. [Google Cloud Console](https://console.cloud.google.com) 에서
-   **Text-to-Speech API** 를 켜고 API 키를 만듭니다
-2. 위 명령을 실행하면 `public/audio/` 에 mp3 가 쌓입니다
-3. 커밋하고 push 하면 끝
+`public/audio/` 에 mp3 334개가 쌓입니다. 이미 있는 파일은 건너뛰므로
+중간에 끊겨도 다시 실행하면 이어서 만듭니다.
 
-목소리·속도를 바꾸고 싶으면:
+### 3) 배포
 
 ```bash
-TTS_VOICE=ko-KR-Neural2-C TTS_RATE=0.9 GOOGLE_TTS_API_KEY=키 npm run audio:tts
+git add public/audio
+git commit -m "음성 파일 추가"
+git push
 ```
 
-이미 있는 파일은 건너뜁니다. 전부 다시 만들려면 `-- --force` 를 붙이세요.
+배포되면 앱이 기기 목소리 대신 이 파일을 재생합니다.
+
+### 목소리 바꾸기
+
+| 값 | 목소리 |
+| --- | --- |
+| `ko-KR-Neural2-A` (기본) | 여성, 차분함 |
+| `ko-KR-Neural2-B` | 여성, 조금 밝음 |
+| `ko-KR-Neural2-C` | 남성 |
+| `ko-KR-Wavenet-A` ~ `D` | 예전 세대, 조금 더 또박또박 |
+
+```bash
+# 목소리·속도·높이 바꿔서 전부 다시 만들기
+TTS_VOICE=ko-KR-Neural2-B TTS_RATE=0.9 TTS_PITCH=2 \
+  GOOGLE_TTS_API_KEY=키 npm run audio:tts -- --force
+```
+
+`TTS_RATE` 는 말 속도(1이 보통, 기본 0.92), `TTS_PITCH` 는 목소리 높이
+(0이 보통, 기본 1.5 — 아이에게 친근하게 살짝 높였습니다).
+마음에 안 들면 `public/audio/*.mp3` 를 지우고 다시 만들면 됩니다.
 
 ## B. 직접 녹음
 
