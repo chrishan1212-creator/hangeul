@@ -145,6 +145,10 @@ export function buildGreetingLine(animal: AnimalInfo): string {
   return `안녕! 나는 ${animal.name}${suffix}. 같이 놀자!`;
 }
 
+/** 녹음·음성 생성 도구에서 모든 대사를 훑을 때 쓴다 */
+export const ALL_ANIMALS: AnimalInfo[] = [...ANIMALS, ...BUILD_FRIENDS];
+export const ALL_FOODS: FoodItem[] = [...PLANT_FOODS, ...MEAT_FOODS, ...TREATS];
+
 /** 밥을 몇 번 먹었는지(round)에 따라 친구가 얼마나 자랐는지 */
 export function animalScale(round: number): number {
   return GROWTH_SCALES[Math.min(round, MAX_GROWTH_ROUND)];

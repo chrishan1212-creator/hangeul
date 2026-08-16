@@ -183,7 +183,9 @@ src/
     textSize.ts        # 글자 수에 맞춘 글씨 크기 계산
 scripts/
   gen-audio-manifest.mjs  # public/audio/ 를 훑어 목록 생성 (prebuild에서 자동 실행)
-  list-audio.mjs          # 녹음해야 할 파일 목록 출력 (npm run audio:list)
+  collect-phrases.mjs     # 앱이 말하는 모든 문장을 실제 코드에서 수집
+  list-audio.mjs          # 녹음할 파일 목록 출력 (npm run audio:list)
+  gen-tts.mjs             # 좋은 TTS로 음성 파일 생성 (npm run audio:tts)
 public/
   manifest.json        # PWA manifest
   sw.js                # 서비스워커 (오프라인 캐싱)
@@ -225,16 +227,27 @@ public/
 를 눌러보세요. 한국어 음성이 아예 없으면 설정 창에 안내가 뜹니다
 (안드로이드는 한국어 음성을 따로 내려받아야 하는 경우가 많습니다).
 
-**② 직접 녹음한 목소리 넣기 (무료)**
+**② 좋은 TTS로 음성 파일을 미리 만들기 (권장, 사실상 무료)**
+
+앱이 말하는 문장은 **334개 · 2,745자**로 정해져 있어서 한 번만 만들어두면 됩니다.
+구글 TTS 무료 한도(월 10만 자)의 **2.7%** 밖에 안 써요. 실시간 호출이 없으니
+요금도 지연도 서버도 필요 없고, 오프라인에서도 같은 목소리가 납니다.
+
+```bash
+npm run audio:tts -- --dry                 # 무엇이 만들어질지 미리 보기
+GOOGLE_TTS_API_KEY=키 npm run audio:tts    # 실제 생성 (public/audio/ 에 저장)
+```
+
+**③ 직접 녹음한 목소리 넣기 (무료)**
 `public/audio/` 에 녹음 파일을 넣기만 하면 그 파일을 재생합니다.
 
 ```bash
-npm run audio:list   # 어떤 파일이 필요한지 목록 출력
+npm run audio:list   # 어떤 파일이 필요한지 목록 출력 (334개)
 ```
 
-목록에 나온 이름 그대로(`사과.mp3`, `따라해보세요.mp3` …) `public/audio/` 에
-저장하고 push하면 끝입니다. 빌드할 때 목록을 자동으로 다시 읽으므로 코드는
-고칠 필요가 없어요. 자세한 내용은 [`public/audio/README.md`](public/audio/README.md).
+②와 ③은 **섞어 쓸 수 있어요.** 전부 TTS로 만들어두고 좋아하는 문장 몇 개만
+직접 녹음해서 덮어써도 됩니다. 자세한 내용은
+[`public/audio/README.md`](public/audio/README.md).
 
 - 일부만 녹음해도 되고, 없는 것은 TTS가 읽습니다
 - 질문은 `단어` + `뒷부분` 두 조각을 이어 붙여 들려주므로, 단어 하나만 녹음하면

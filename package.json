@@ -10,7 +10,8 @@
     "start": "next start",
     "lint": "next lint",
     "audio:manifest": "node scripts/gen-audio-manifest.mjs",
-    "audio:list": "node scripts/list-audio.mjs"
+    "audio:list": "node scripts/list-audio.mjs",
+    "audio:tts": "node scripts/gen-tts.mjs"
   },
   "dependencies": {
     "next": "14.2.35",
@@ -26,7 +27,8 @@
     "eslint-config-next": "14.2.35",
     "postcss": "8.4.39",
     "tailwindcss": "3.4.4",
-    "typescript": "5.5.3"
+    "typescript": "5.5.3",
+    "esbuild": "0.23.1"
   },
   "engines": {
     "node": ">=18.17.0"
