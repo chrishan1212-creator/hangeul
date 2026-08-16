@@ -27,7 +27,14 @@ import {
   randomFood,
 } from "@/lib/animals";
 import { playCorrect, playFeast, playWrong, unlockAudio } from "@/lib/sfx";
-import { cancelSpeech, delay, speak, speakPhrase } from "@/lib/speech";
+import {
+  cancelSpeech,
+  delay,
+  prefetchPhrase,
+  prefetchSpeech,
+  speak,
+  speakPhrase,
+} from "@/lib/speech";
 import { fillWidthFontSize } from "@/lib/textSize";
 
 interface GameBoardProps {
@@ -138,6 +145,10 @@ export default function GameBoard({
     setQuestion(q);
     setCelebrating(false);
     setWrongDisplay(null);
+
+    // 질문과 정답 칭찬을 미리 받아둔다. 말이 곧바로 시작되게 하기 위해서다.
+    prefetchPhrase(q.lineParts);
+    prefetchSpeech(q.target.celebrateLine ?? q.target.spoken);
 
     cancelSpeech();
     // 화면이 먼저 뜨고 잠깐 뒤에 친구가 말하도록 한 박자 쉰다

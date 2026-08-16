@@ -47,7 +47,7 @@ async function loadAppLogic() {
 }
 
 /** 대사 조각을 여러 번 뽑아본다. 템플릿이 무작위로 골라지기 때문이다. */
-const SAMPLES_PER_ITEM = 40;
+const SAMPLES_PER_ITEM = 60;
 
 export async function collectPhrases() {
   const app = await loadAppLogic();
@@ -77,6 +77,14 @@ export async function collectPhrases() {
 
       for (let i = 0; i < SAMPLES_PER_ITEM; i++) {
         const parts = app.buildPromptParts(mode, item);
+
+        // 질문은 **문장 통째로** 하나의 파일로 만드는 것이 가장 중요하다.
+        // 조각을 이어 붙이면 조각마다 앞뒤 무음이 끼어 "저기. 쥐. 가 있네."
+        // 처럼 뚝뚝 끊겨 들린다. 통문장이면 억양도 자연스럽게 이어진다.
+        sentences.add(parts.join(""));
+
+        // 조각도 남겨둔다. 통문장 파일이 없을 때(대사를 새로 추가했을 때 등)
+        // 조각을 이어 붙이는 쪽으로 자연스럽게 물러나기 위해서다.
         for (const part of parts) {
           const trimmed = part.trim();
           if (!trimmed) continue;
@@ -89,6 +97,7 @@ export async function collectPhrases() {
   }
 
   sentences.add("따라해보세요");
+  sentences.add("안녕! 나는 아기공룡이야.");
   for (const food of app.ALL_FOODS) sentences.add(app.buildFeastLine(food));
   for (const animal of app.ALL_ANIMALS) sentences.add(app.buildGreetingLine(animal));
 

@@ -5,7 +5,7 @@
  * 없으면 기기 내장 목소리(TTS)로 읽어준다.
  * 순서대로 말하게 하려고 Promise를 반환한다.
  */
-import { getClipUrl, playClip, stopClip } from "./audioClips";
+import { getClipUrl, playClip, prefetchClip, stopClip } from "./audioClips";
 import { duckBgm } from "./bgm";
 import { getSettings } from "./settings";
 
@@ -152,24 +152,52 @@ async function withDuckedBgm(run: () => Promise<void>): Promise<void> {
 }
 
 /**
- * 여러 조각을 이어서 말한다. 조각이 **전부** 녹음되어 있으면 녹음으로 이어 붙이고,
- * 하나라도 없으면 문장 전체를 TTS로 읽는다.
- * (녹음 목소리와 기계 목소리가 한 문장 안에서 섞이지 않게 하기 위해서다)
+ * 여러 조각으로 이루어진 한 문장을 말한다. 좋은 순서대로 시도한다.
+ *
+ * 1. **문장 통째로** 된 파일이 있으면 그것 하나만 재생한다. 가장 자연스럽다.
+ * 2. 없으면 조각 파일을 이어 붙인다. 다만 조각마다 앞뒤 무음이 있어서
+ *    "저기. 쥐. 가 있네." 처럼 끊겨 들리므로 어디까지나 차선책이다.
+ *    (조각이 하나라도 빠지면 한 문장 안에서 목소리가 섞이므로 쓰지 않는다)
+ * 3. 그것도 안 되면 기기 내장 목소리로 문장 전체를 읽는다.
  */
 export async function speakPhrase(parts: string[], options: SpeakOptions = {}): Promise<void> {
   if (!getSettings().voice) return;
 
+  const whole = parts.join("");
+  const wholeClip = getClipUrl(whole);
   const urls = parts.map(getClipUrl);
 
   await withDuckedBgm(async () => {
+    if (wholeClip) {
+      await playClip(wholeClip);
+      return;
+    }
     if (urls.every((url): url is string => url !== null)) {
       for (const url of urls) {
         await playClip(url);
       }
       return;
     }
-    await speakWithTts(parts.join(""), options);
+    await speakWithTts(whole, options);
   });
+}
+
+/**
+ * 곧 말할 것들을 미리 받아둔다. 말이 시작될 때의 뜸을 줄여준다.
+ * (문장 통째 파일이 있으면 그것만, 없으면 조각들을 받아둔다)
+ */
+export function prefetchPhrase(parts: string[]): void {
+  const whole = getClipUrl(parts.join(""));
+  if (whole) {
+    prefetchClip(whole);
+    return;
+  }
+  for (const part of parts) prefetchClip(getClipUrl(part));
+}
+
+/** 낱말 하나를 미리 받아둔다 */
+export function prefetchSpeech(text: string): void {
+  prefetchClip(getClipUrl(text));
 }
 
 /** cancel() 직후에 바로 speak() 하면 씹히는 브라우저가 있어 살짝 텀을 준다 */
