@@ -28,9 +28,22 @@
    사용자 인증 정보 만들기 → API 키** → 나온 키를 복사
 5. (권장) 그 키의 **키 제한 → API 제한 → Cloud Text-to-Speech API** 만 체크
 
-> ⚠️ API 키는 **절대 코드나 깃에 넣지 마세요.** 아래처럼 명령어 앞에만 붙입니다.
+> ⚠️ API 키는 **절대 코드나 깃에 넣지 마세요.** 아래 2-A 의 시크릿이나
+> 2-B 의 명령어 앞에만 붙입니다.
 
-### 2) 음성 파일 만들기
+### 2-A) 폰·브라우저만으로 만들기 (컴퓨터 없이, 권장)
+
+1. GitHub 저장소 → **Settings → Secrets and variables → Actions →
+   New repository secret**
+   - Name: `GOOGLE_TTS_API_KEY`
+   - Secret: 위에서 복사한 키 → **Add secret**
+2. **Actions** 탭 → 왼쪽에서 **🎙️ 음성 파일 만들기** →
+   오른쪽 **Run workflow** → 브랜치 고르고 초록 버튼
+3. 1~2분 뒤 mp3 334개가 `public/audio/` 에 **자동으로 커밋**됩니다.
+   목소리·속도를 바꾸고 싶으면 Run workflow 창에서 골라서 다시 돌리면 돼요
+   (전부 다시 만들려면 "이미 있는 파일도 전부 다시 만들기" 체크).
+
+### 2-B) 컴퓨터에서 만들기
 
 ```bash
 git pull
@@ -43,7 +56,7 @@ GOOGLE_TTS_API_KEY=붙여넣은키 npm run audio:tts   # 실제 생성 (1~2분)
 `public/audio/` 에 mp3 334개가 쌓입니다. 이미 있는 파일은 건너뛰므로
 중간에 끊겨도 다시 실행하면 이어서 만듭니다.
 
-### 3) 배포
+### 3) 배포 (2-B 로 만들었을 때만)
 
 ```bash
 git add public/audio
@@ -52,6 +65,7 @@ git push
 ```
 
 배포되면 앱이 기기 목소리 대신 이 파일을 재생합니다.
+(2-A 는 액션이 알아서 커밋하므로 이 단계가 필요 없어요.)
 
 ### 목소리 바꾸기
 

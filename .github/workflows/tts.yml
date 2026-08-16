@@ -1,0 +1,72 @@
+# 폰에서도 음성 파일을 만들 수 있게 하는 워크플로.
+# GitHub → Actions → "🎙️ 음성 파일 만들기" → Run workflow 를 누르면
+# 이 액션이 구글 TTS로 mp3 를 만들어 이 브랜치에 바로 커밋해 준다.
+#
+# 미리 해둘 것: Settings → Secrets and variables → Actions 에
+#   GOOGLE_TTS_API_KEY  라는 이름으로 구글 API 키를 저장.
+name: 🎙️ 음성 파일 만들기
+
+on:
+  workflow_dispatch:
+    inputs:
+      voice:
+        description: "목소리 (A·B=여성, C=남성)"
+        type: choice
+        default: ko-KR-Neural2-A
+        options:
+          - ko-KR-Neural2-A
+          - ko-KR-Neural2-B
+          - ko-KR-Neural2-C
+          - ko-KR-Wavenet-A
+          - ko-KR-Wavenet-C
+      rate:
+        description: "말하는 속도 (1이 보통)"
+        default: "0.92"
+      pitch:
+        description: "목소리 높이 (0이 보통)"
+        default: "1.5"
+      force:
+        description: "이미 있는 파일도 전부 다시 만들기"
+        type: boolean
+        default: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: 음성 만들기
+        env:
+          GOOGLE_TTS_API_KEY: ${{ secrets.GOOGLE_TTS_API_KEY }}
+          TTS_VOICE: ${{ inputs.voice }}
+          TTS_RATE: ${{ inputs.rate }}
+          TTS_PITCH: ${{ inputs.pitch }}
+        run: |
+          if [ -z "$GOOGLE_TTS_API_KEY" ]; then
+            echo "::error::GOOGLE_TTS_API_KEY 시크릿이 없습니다. Settings → Secrets and variables → Actions 에서 추가해 주세요."
+            exit 1
+          fi
+          npm run audio:tts -- ${{ inputs.force && '--force' || '' }}
+
+      - name: 커밋하기
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/audio
+          if git diff --cached --quiet; then
+            echo "바뀐 파일이 없습니다."
+            exit 0
+          fi
+          git commit -m "음성 파일 생성 (${{ inputs.voice }})"
+          git push
