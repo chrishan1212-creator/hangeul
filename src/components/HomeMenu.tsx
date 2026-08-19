@@ -57,9 +57,12 @@ export default function HomeMenu({ onSelect }: HomeMenuProps) {
         ))}
       </section>
 
-      <footer className="relative z-10 pb-2">
+      <footer className="relative z-10 flex flex-col items-center gap-1 pb-2">
         <p className="text-center font-jua text-sm text-white/80">
           소리가 나오니 볼륨을 켜주세요 🔊
+        </p>
+        <p className="text-center font-jua text-xs text-white/60">
+          🗣️ 읽어주는 목소리는 AI로 만든 음성이에요
         </p>
       </footer>
     </PlayShell>

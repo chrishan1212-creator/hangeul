@@ -197,7 +197,7 @@ export default function SettingsButton() {
               <ToggleRow
                 emoji="🗣️"
                 label="읽어주기"
-                hint="공룡 목소리와 단어 읽어주기"
+                hint="AI로 만든 목소리로 공룡 대사와 단어를 읽어줘요"
                 on={settings.voice}
                 onChange={(next) => updateSettings({ voice: next })}
               />
