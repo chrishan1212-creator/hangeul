@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { unlockAudio } from "@/lib/audioContext";
 import { prepareBgm, saveBgmPosition, startBgm, stopBgm, syncBgm } from "@/lib/bgm";
 import { getSettings, loadSettings } from "@/lib/settings";
+import { loadVillage } from "@/lib/village";
 
 /**
  * 앱이 뜰 때 한 번만 해야 하는 일들.
@@ -15,6 +16,7 @@ import { getSettings, loadSettings } from "@/lib/settings";
 export default function AppBootstrap() {
   useEffect(() => {
     loadSettings();
+    loadVillage();
 
     // 재생하지 않고 파일만 미리 받아둔다. 터치 전에도 할 수 있다.
     if (getSettings().bgm) prepareBgm();

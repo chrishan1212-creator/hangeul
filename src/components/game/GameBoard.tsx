@@ -5,6 +5,7 @@ import Confetti from "@/components/Confetti";
 import ChoiceTile from "./ChoiceTile";
 import AnimalTrack from "./AnimalTrack";
 import LetterBuilder from "./LetterBuilder";
+import VillageModal from "./VillageModal";
 import SettingsButton from "@/components/SettingsButton";
 import {
   GameMode,
@@ -26,6 +27,7 @@ import {
   randomAnimal,
   randomFood,
 } from "@/lib/animals";
+import { moveIntoVillage } from "@/lib/village";
 import { playCorrect, playFeast, playWrong, unlockAudio } from "@/lib/sfx";
 import {
   cancelSpeech,
@@ -81,6 +83,7 @@ export default function GameBoard({
   const [wrongDisplay, setWrongDisplay] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [confettiKey, setConfettiKey] = useState(0);
+  const [showVillage, setShowVillage] = useState(false);
 
   // 같은 친구가 따라다니며 밥을 먹을 때마다 자라고, 다 자라면 새 친구가 온다
   const buildMode = mode === "build";
@@ -127,6 +130,8 @@ export default function GameBoard({
       const nextRound = roundRef.current + 1;
 
       if (nextRound > MAX_GROWTH_ROUND) {
+        // 다 자란 친구는 마을에 입주한다
+        moveIntoVillage(animalRef.current.name);
         newFriend = randomAnimal(animalRef.current.name, buildMode);
         setAnimal(newFriend);
         setRound(0);
@@ -290,6 +295,8 @@ export default function GameBoard({
     <>
       <Confetti triggerKey={confettiKey} />
 
+      {showVillage && <VillageModal onClose={() => setShowVillage(false)} />}
+
       <div className="relative z-10 flex w-full max-w-md shrink-0 flex-col items-center gap-1">
         <header className="flex w-full items-center justify-between">
           <button
@@ -304,6 +311,14 @@ export default function GameBoard({
             <span className="rounded-full bg-white/25 px-4 py-2 font-jua text-lg text-white backdrop-blur-sm">
               ⭐ {score}
             </span>
+            <button
+              type="button"
+              onClick={() => setShowVillage(true)}
+              aria-label="동물 마을 보기"
+              className="rounded-full bg-white/25 px-3 py-2 text-xl backdrop-blur-sm transition hover:bg-white/35"
+            >
+              🏡
+            </button>
             <SettingsButton />
           </div>
         </header>
