@@ -2,13 +2,10 @@ import { defineConfig } from "@apps-in-toss/web-framework/config";
 
 /**
  * 앱인토스(토스 미니앱) 배포 설정.
- *
- * ⚠️ appName 은 반드시 앱인토스 콘솔에 등록한 이름(케밥-케이스)과 똑같아야
- * 한다. 아래 값은 자리표시자이니, 콘솔에서 확인한 실제 앱 이름으로
- * 바꿔야 `ait build`/`ait deploy` 가 정상 동작한다.
+ * appName 은 앱인토스 콘솔에 등록한 이름과 똑같아야 한다.
  */
 export default defineConfig({
-  appName: "hangeul-nolimteo", // TODO: 콘솔에 등록한 실제 앱 이름으로 바꾸기
+  appName: "hangeulnori",
 
   brand: {
     // 홈 화면 테마 색과 동일하게 맞췄다 (src/app/layout.tsx 의 themeColor)

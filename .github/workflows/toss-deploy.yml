@@ -3,10 +3,7 @@
 # 이 액션이 정적 빌드를 만들고(.ait) 앱인토스에 올려준다.
 #
 # 미리 해둘 것:
-#   1) apps-in-toss.config.ts 의 appName 을 콘솔에 등록한 실제 이름으로 바꾸기
-#      (지금은 "hangeul-nolimteo" 자리표시자로 되어 있다 — 콘솔 값과 다르면
-#      아래 실행이 실패한다)
-#   2) 앱인토스 콘솔에서 배포용 API 키를 발급받아, 이 저장소의
+#   1) 앱인토스 콘솔에서 배포용 API 키를 발급받아, 이 저장소의
 #      Settings → Secrets and variables → Actions 에
 #      TOSS_API_KEY 라는 이름으로 저장하기
 #

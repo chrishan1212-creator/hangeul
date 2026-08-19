@@ -157,13 +157,10 @@ vercel
 
 ### 처음 한 번만 할 일
 
-1. **[apps-in-toss.config.ts](apps-in-toss.config.ts) 의 `appName` 을 앱인토스
-   콘솔에 등록한 실제 앱 이름(케밥-케이스)으로 바꾸기** — 지금은
-   `hangeul-nolimteo` 자리표시자로 되어 있어서, 콘솔 값과 다르면 배포가
-   실패합니다.
-2. 앱인토스 콘솔에서 **개인정보처리방침 URL** 등록란에
-   `https://<Vercel 도메인>/privacy` 를 입력 ([privacy 페이지](src/app/privacy/page.tsx) 참고)
-3. 콘솔에서 배포용 **API 키**를 발급받아, 이 저장소의
+1. 앱인토스 콘솔의 **"준비하기" → "약관 등록하기"** 에서
+   **개인정보처리방침 URL** 등록란에 `https://<Vercel 도메인>/privacy` 를 입력
+   ([privacy 페이지](src/app/privacy/page.tsx) 참고)
+2. 콘솔에서 배포용 **API 키**를 발급받아, 이 저장소의
    **Settings → Secrets and variables → Actions** 에
    `TOSS_API_KEY` 라는 이름으로 저장
 
