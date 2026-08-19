@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "apps-in-toss": {
+      "type": "stdio",
+      "command": "ax",
+      "args": [
+        "mcp"
+      ],
+      "env": {}
+    },
+    "apps-in-toss-docs": {
+      "type": "http",
+      "url": "https://developers-apps-in-toss.toss.im/~gitbook/mcp"
+    }
+  }
+}
