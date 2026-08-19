@@ -1,0 +1,50 @@
+# 폰에서도 토스 미니앱으로 배포할 수 있게 하는 워크플로.
+# GitHub → Actions → "🚀 토스 미니앱 배포" → Run workflow 를 누르면
+# 이 액션이 정적 빌드를 만들고(.ait) 앱인토스에 올려준다.
+#
+# 미리 해둘 것:
+#   1) apps-in-toss.config.ts 의 appName 을 콘솔에 등록한 실제 이름으로 바꾸기
+#      (지금은 "hangeul-nolimteo" 자리표시자로 되어 있다 — 콘솔 값과 다르면
+#      아래 실행이 실패한다)
+#   2) 앱인토스 콘솔에서 배포용 API 키를 발급받아, 이 저장소의
+#      Settings → Secrets and variables → Actions 에
+#      TOSS_API_KEY 라는 이름으로 저장하기
+#
+# ait CLI(정확히는 @apps-in-toss/ait-format)는 Node.js 24 이상이 필요해서
+# 이 워크플로는 node-version: 24 를 쓴다. 로컬 컴퓨터에 24 미만이 깔려있어도
+# 이 워크플로는 정상 동작한다.
+name: 🚀 토스 미니앱 배포
+
+on:
+  workflow_dispatch:
+    inputs:
+      memo:
+        description: "출시 메모 (선택, 최대 1000자)"
+        default: ""
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: 정적 빌드 + .ait 만들기
+        run: npm run build:toss
+
+      - name: 앱인토스에 배포하기
+        env:
+          TOSS_API_KEY: ${{ secrets.TOSS_API_KEY }}
+        run: |
+          if [ -z "$TOSS_API_KEY" ]; then
+            echo "::error::TOSS_API_KEY 시크릿이 없습니다. Settings → Secrets and variables → Actions 에서 추가해 주세요."
+            exit 1
+          fi
+          npx ait deploy --api-key "$TOSS_API_KEY" ${{ inputs.memo != '' && format('-m "{0}"', inputs.memo) || '' }}

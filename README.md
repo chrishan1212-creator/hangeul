@@ -147,6 +147,56 @@ npm i -g vercel
 vercel
 ```
 
+## 🚇 토스 미니앱(앱인토스) 배포
+
+이 앱은 Vercel(PWA)과 토스 미니앱, **두 곳에 동시에 배포**할 수 있게 만들어져
+있습니다. 코드는 하나고, 빌드 방식만 다릅니다.
+
+- `npm run build` → Vercel용 (서버 필요, `headers()` 사용)
+- `npm run build:toss` → 토스용 정적 내보내기(`out/`) + `.ait` 번들 생성
+
+### 처음 한 번만 할 일
+
+1. **[apps-in-toss.config.ts](apps-in-toss.config.ts) 의 `appName` 을 앱인토스
+   콘솔에 등록한 실제 앱 이름(케밥-케이스)으로 바꾸기** — 지금은
+   `hangeul-nolimteo` 자리표시자로 되어 있어서, 콘솔 값과 다르면 배포가
+   실패합니다.
+2. 앱인토스 콘솔에서 **개인정보처리방침 URL** 등록란에
+   `https://<Vercel 도메인>/privacy` 를 입력 ([privacy 페이지](src/app/privacy/page.tsx) 참고)
+3. 콘솔에서 배포용 **API 키**를 발급받아, 이 저장소의
+   **Settings → Secrets and variables → Actions** 에
+   `TOSS_API_KEY` 라는 이름으로 저장
+
+### 폰에서 배포하기 (권장)
+
+**Actions** 탭 → **🚀 토스 미니앱 배포** → **Run workflow**. 정적 빌드와
+`.ait` 생성, 앱인토스 업로드까지 액션이 전부 처리합니다.
+
+### 컴퓨터에서 배포하기
+
+`ait` CLI(정확히는 `@apps-in-toss/ait-format`)는 **Node.js 24 이상**이
+필요합니다 (앱 자체 실행에는 필요 없고, 이 배포 명령에만 해당).
+
+```bash
+npm run build:toss           # out/ 정적 빌드 + <appName>.ait 생성
+npx ait deploy                # 대화형으로 API 키 입력받아 업로드
+# 또는
+npx ait deploy --api-key 키 -m "출시 메모"
+```
+
+업로드 후 콘솔에서 **테스트하기**를 누르면 QR코드가 나오고, 토스 앱으로
+스캔하면 실제 기기에서 확인할 수 있습니다.
+
+### 알아두면 좋은 점
+
+- **말하기 놀이의 마이크 권한**이 토스 앱 안에서도 동작하려면
+  `apps-in-toss.config.ts` 의 `permissions` 에 `microphone` 이 반드시 있어야
+  합니다 (이미 넣어뒀습니다)
+- `out/`, `*.ait` 는 빌드할 때마다 새로 만들어지는 산출물이라 깃에 안 올라갑니다
+  (`.gitignore` 처리됨)
+- 두 빌드는 코드 공유만 하고 배포는 독립적입니다 — 토스 쪽만 새로 배포하고
+  싶으면 `npm run build:toss` 만 다시 돌리면 됩니다
+
 ## 📁 프로젝트 구조
 
 ```
