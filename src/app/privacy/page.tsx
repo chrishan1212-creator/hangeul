@@ -90,7 +90,7 @@ export default function PrivacyPage() {
         <p>
           이 방침이나 앱 이용에 대해 궁금한 점이 있다면 아래로 연락해 주세요.
         </p>
-        <p className="font-jua text-candy-purple">[이메일 주소를 여기에 적어주세요]</p>
+        <p className="font-jua text-candy-purple">curioushsh@naver.com</p>
       </Section>
 
       <Section title="방침 변경">
