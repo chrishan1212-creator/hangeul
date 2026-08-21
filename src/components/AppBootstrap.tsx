@@ -23,11 +23,21 @@ export default function AppBootstrap() {
 
     // 화면을 처음 만지는 순간에야 오디오 장치를 만들 수 있다.
     // (그 전에 만들어두면 iOS에서 소리가 아예 나지 않는다)
+    //
+    // pointerdown 하나만 듣고 있었더니, 토스 미니앱(웹뷰) 안에서는 홈 화면을
+    // 그냥 눌러 이동할 때는 음악이 안 켜지고, 정작 설정 버튼처럼 onClick 에서
+    // 직접 unlockAudio() 를 부르는 곳에서만 켜지는 문제가 있었다. 웹뷰마다
+    // "사용자가 조작했다"고 인정해주는 이벤트 종류가 달라서(포인터 이벤트를
+    // click 만큼 신뢰하지 않는 경우가 있다) 여러 이벤트를 다 걸어서 어떤
+    // 방식으로 눌러도 첫 조작에서 바로 풀리게 한다.
     const handleFirstGesture = () => {
       unlockAudio();
       if (getSettings().bgm) startBgm();
     };
-    window.addEventListener("pointerdown", handleFirstGesture, { once: true });
+    const gestureEvents = ["pointerdown", "touchend", "mousedown", "click", "keydown"] as const;
+    for (const type of gestureEvents) {
+      window.addEventListener(type, handleFirstGesture, { once: true, capture: true });
+    }
 
     const handleVisibility = () => {
       if (document.hidden) {
@@ -43,7 +53,9 @@ export default function AppBootstrap() {
     window.addEventListener("pagehide", handlePageHide);
 
     return () => {
-      window.removeEventListener("pointerdown", handleFirstGesture);
+      for (const type of gestureEvents) {
+        window.removeEventListener(type, handleFirstGesture, { capture: true });
+      }
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("pagehide", handlePageHide);
       stopBgm();
