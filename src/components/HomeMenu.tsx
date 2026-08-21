@@ -14,8 +14,8 @@ const MENU: Array<{ view: PlayView; emoji: string; title: string; description: s
   },
   {
     view: "game",
-    emoji: "🎮",
-    title: "찾기 게임",
+    emoji: "🔤",
+    title: "글자 놀이",
     description: "소리를 듣고 맞는 글자를 찾아요",
   },
 ];

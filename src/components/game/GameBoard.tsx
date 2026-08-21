@@ -302,7 +302,7 @@ export default function GameBoard({
           <button
             type="button"
             onClick={onExit}
-            aria-label="게임 종료하고 뒤로 가기"
+            aria-label="놀이 종료하고 뒤로 가기"
             className="rounded-full bg-white/25 px-4 py-2 font-jua text-lg text-white backdrop-blur-sm transition hover:bg-white/35"
           >
             ← 뒤로
