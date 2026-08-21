@@ -52,7 +52,7 @@ export default function GamePlay({ onHome }: GamePlayProps) {
         >
           ← 홈
         </button>
-        <h1 className="font-jua text-2xl text-white drop-shadow">🔤 글자 놀이</h1>
+        <h1 className="font-jua text-2xl text-white drop-shadow">가 글자 놀이</h1>
         <SettingsButton />
       </header>
 
