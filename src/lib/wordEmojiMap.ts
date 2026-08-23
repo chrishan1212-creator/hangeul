@@ -63,7 +63,7 @@ export const WORD_EMOJI_MAP: Record<string, string> = {
 
   // 몸
   눈: "👀", 코: "👃", 입: "👄", 귀: "👂", 손: "✋", 발: "🦶",
-  머리: "🧠", 얼굴: "😊", 이빨: "🦷", 심장: "❤️",
+  머리: "👤", 머리카락: "💇", 얼굴: "😊", 이빨: "🦷", 심장: "❤️",
 
   // 학교 & 놀이
   학교: "🏫", 책: "📚", 연필: "✏️", 가방: "🎒", 공: "⚽",
@@ -100,11 +100,18 @@ export interface MatchResult {
 const MIN_PARTIAL_MATCH_LENGTH = 2;
 
 /**
- * 인식된 음성 텍스트에서 가장 잘 맞는 단어와 이모지를 찾는다.
+ * 인식된 음성 텍스트에서 가장 잘 맞는 이모지를 찾는다.
  * 1) 정확히 일치하는 단어 우선
- * 2) 사전에 있는 2글자 이상 단어가 문장 안에 포함되어 있으면 그중 가장 긴 단어 선택
+ * 2) 사전에 있는 2글자 이상 단어가 문장 안에 포함되어 있으면 그중 가장 긴 단어의 이모지를 빌려온다
  *    (1글자 단어는 완전 일치가 아니면 후보에서 제외 - 위 설명 참고)
- * 3) 못 찾으면 원래 들린 말 그대로 보여주고 기본 이모지를 붙인다
+ * 3) 못 찾으면 기본 이모지를 붙인다
+ *
+ * ⚠️ 화면에 보여주고 읽어주는 word 는 **항상 아이가 실제로 말하거나 입력한 글자
+ * 그대로**다. 부분 일치로 이모지를 빌려왔다고 해서 그 사전 단어로 바꿔치기하지
+ * 않는다 — 예전에는 "머리카락"이라고 말해도 "머리"만 부분 일치해서 화면과
+ * 읽어주기 모두 "머리"로 바뀌어버렸는데, 아이 입장에서는 자기가 말한 말이
+ * 그대로 안 나와서 이상했을 것이다. 지금은 이모지만 "머리"에서 빌려오고,
+ * 글자와 발음은 "머리카락" 그대로 나온다.
  */
 export function matchWordToEmoji(transcript: string): MatchResult {
   const cleaned = normalize(transcript);
@@ -125,7 +132,7 @@ export function matchWordToEmoji(transcript: string): MatchResult {
   }
 
   if (bestKey) {
-    return { word: bestKey, emoji: WORD_EMOJI_MAP[bestKey], matched: true };
+    return { word: cleaned, emoji: WORD_EMOJI_MAP[bestKey], matched: true };
   }
 
   return { word: cleaned, emoji: "💬", matched: false };
