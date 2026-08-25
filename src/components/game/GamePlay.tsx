@@ -11,10 +11,15 @@ import { primeSpeech } from "@/lib/speech";
 
 interface GamePlayProps {
   onHome: () => void;
+  /**
+   * 미리 정해진 모드로 바로 시작한다 (모드 고르는 화면을 건너뛴다).
+   * 토스 미니앱 "주요 기능" 딥링크(예: /consonant, /word)로 들어올 때 쓴다.
+   */
+  initialMode?: GameMode;
 }
 
-export default function GamePlay({ onHome }: GamePlayProps) {
-  const [mode, setMode] = useState<GameMode | null>(null);
+export default function GamePlay({ onHome, initialMode }: GamePlayProps) {
+  const [mode, setMode] = useState<GameMode | null>(initialMode ?? null);
   const [includeBatchim, setIncludeBatchim] = useState(false);
   const [choiceCount, setChoiceCount] = useState(4);
   const [comboVowel, setComboVowel] = useState<string>(ALL_VOWELS);

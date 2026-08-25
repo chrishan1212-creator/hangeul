@@ -4,10 +4,13 @@ import { useState } from "react";
 import HomeMenu, { PlayView } from "@/components/HomeMenu";
 import SpeakPlay from "@/components/SpeakPlay";
 import GamePlay from "@/components/game/GamePlay";
+import { GameMode } from "@/lib/gameData";
 
 interface AppShellProps {
   /** 어떤 화면으로 시작할지. 딥링크(예: /speak, /game)로 바로 들어올 때 쓴다. */
   initialView?: PlayView;
+  /** initialView가 "game"일 때, 모드 고르는 화면을 건너뛰고 바로 시작할 모드 */
+  initialGameMode?: GameMode;
 }
 
 /**
@@ -22,7 +25,7 @@ interface AppShellProps {
  * 그건 최초 진입 한 번뿐이라 음악 끊김과 무관하므로, initialView 로 받는다.
  * /src/app/speak, /src/app/game 페이지가 이 값을 넘겨준다.
  */
-export default function AppShell({ initialView = "home" }: AppShellProps) {
+export default function AppShell({ initialView = "home", initialGameMode }: AppShellProps) {
   const [view, setView] = useState<PlayView>(initialView);
 
   if (view === "speak") {
@@ -30,7 +33,7 @@ export default function AppShell({ initialView = "home" }: AppShellProps) {
   }
 
   if (view === "game") {
-    return <GamePlay onHome={() => setView("home")} />;
+    return <GamePlay onHome={() => setView("home")} initialMode={initialGameMode} />;
   }
 
   return <HomeMenu onSelect={setView} />;
