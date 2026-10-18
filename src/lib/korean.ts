@@ -84,3 +84,24 @@ export function splitSyllable(syllable: string): SyllableParts | null {
     vowelName: VOWEL_NAMES[vowel] ?? vowel,
   };
 }
+
+/** 자음 이름 (ㄱ -> 기역) */
+export function consonantName(consonant: string): string {
+  return CONSONANT_NAMES[consonant] ?? consonant;
+}
+
+/** 모음 소리 (ㅏ -> 아) */
+export function vowelName(vowel: string): string {
+  return VOWEL_NAMES[vowel] ?? vowel;
+}
+
+/**
+ * 자음과 모음을 합쳐 받침 없는 한 글자를 만든다. (예: ㄱ + ㅏ -> "가")
+ * 낱자가 아니면 빈 문자열을 돌려준다.
+ */
+export function composeSyllable(consonant: string, vowel: string): string {
+  const c = CHOSEONG.indexOf(consonant);
+  const v = JUNGSEONG.indexOf(vowel);
+  if (c < 0 || v < 0) return "";
+  return String.fromCharCode(HANGUL_START + c * 588 + v * 28);
+}

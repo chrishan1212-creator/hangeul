@@ -4,6 +4,7 @@ import { useState } from "react";
 import HomeMenu, { PlayView } from "@/components/HomeMenu";
 import SpeakPlay from "@/components/SpeakPlay";
 import GamePlay from "@/components/game/GamePlay";
+import SyllableLab from "@/components/SyllableLab";
 import { GameMode } from "@/lib/gameData";
 
 interface AppShellProps {
@@ -23,7 +24,7 @@ interface AppShellProps {
  * 다만 앱을 "처음 여는 시점"에는 어느 화면에서 시작할지 골라야 할 때가 있다
  * (토스 미니앱의 "주요 기능" 딥링크처럼, 특정 화면으로 바로 들어와야 하는 경우).
  * 그건 최초 진입 한 번뿐이라 음악 끊김과 무관하므로, initialView 로 받는다.
- * /src/app/speak, /src/app/game 페이지가 이 값을 넘겨준다.
+ * /src/app/speak, /src/app/game, /src/app/combine 페이지가 이 값을 넘겨준다.
  */
 export default function AppShell({ initialView = "home", initialGameMode }: AppShellProps) {
   const [view, setView] = useState<PlayView>(initialView);
@@ -34,6 +35,10 @@ export default function AppShell({ initialView = "home", initialGameMode }: AppS
 
   if (view === "game") {
     return <GamePlay onHome={() => setView("home")} initialMode={initialGameMode} />;
+  }
+
+  if (view === "combine") {
+    return <SyllableLab onHome={() => setView("home")} />;
   }
 
   return <HomeMenu onSelect={setView} />;
