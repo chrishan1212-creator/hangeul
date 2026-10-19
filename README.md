@@ -327,6 +327,10 @@ GitHub → **Actions** → **🗣️ 일레븐랩스 목소리 만들기** → R
 같은 목소리로 이미 만든 파일은 `public/audio/elevenlabs.json` 에 기록돼 다시 돌려도 건너뜁니다
 (크레딧이 두 번 나가지 않아요). 목소리 ID를 바꾸면 그 목소리로 새로 만듭니다.
 
+- **외국인 억양처럼 들리면**: Voice Library에서 언어를 **Korean** 으로 걸러 한국어 원어민 목소리를 고르거나,
+  모델을 `eleven_turbo_v2_5` 로 바꿔보세요 (한국어로 고정해서 읽혀요)
+- **빠르면**: `speed` 를 낮추세요 (기본 0.8, 최저 0.7)
+
 ```bash
 ELEVENLABS_API_KEY=키 ELEVENLABS_VOICE_ID=목소리ID npm run audio:eleven -- --scope=sample
 npm run audio:eleven -- --scope=all --dry   # 몇 자인지 미리 보기

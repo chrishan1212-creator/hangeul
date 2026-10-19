@@ -29,7 +29,12 @@ const VOICE_ID = process.env.ELEVENLABS_VOICE_ID;
 /** 한국어가 자연스러운 기본 모델. 크레딧을 아끼려면 eleven_flash_v2_5 (절반) */
 const MODEL = process.env.ELEVENLABS_MODEL || "eleven_multilingual_v2";
 /** 말하는 속도 (0.7 ~ 1.2, 1이 보통). 아이가 따라 하기 좋게 살짝 느리게. */
-const SPEED = Number(process.env.ELEVENLABS_SPEED || 0.9);
+const SPEED = Number(process.env.ELEVENLABS_SPEED || 0.8);
+/**
+ * 한국어로 읽으라고 못박는다. turbo/flash v2.5 모델만 받는 값이라 그때만 보낸다.
+ * (외국어 목소리로 한국어를 읽을 때 생기는 외국인 억양을 줄여준다)
+ */
+const LANGUAGE_CODE = /_v2_5$/.test(MODEL) ? "ko" : undefined;
 /** 높을수록 매번 비슷하게 읽는다. 낱말 카드처럼 일정한 게 좋아서 조금 높게. */
 const STABILITY = Number(process.env.ELEVENLABS_STABILITY || 0.6);
 
@@ -106,6 +111,7 @@ async function synthesize(text, attempt = 1) {
       body: JSON.stringify({
         text,
         model_id: MODEL,
+        ...(LANGUAGE_CODE && { language_code: LANGUAGE_CODE }),
         voice_settings: {
           stability: STABILITY,
           similarity_boost: 0.75,
@@ -141,7 +147,7 @@ async function main() {
 
   console.log(`범위: ${scope} · 전체 ${phrases.length}개`);
   console.log(`새로 만들 것 ${todo.length}개 · ${chars}자 · 예상 크레딧 약 ${Math.ceil(chars * creditPerChar)}`);
-  console.log(`모델 ${MODEL} · 속도 ${SPEED} · 안정감 ${STABILITY}`);
+  console.log(`모델 ${MODEL}${LANGUAGE_CODE ? " (한국어 고정)" : ""} · 속도 ${SPEED} · 안정감 ${STABILITY}`);
 
   if (dryRun) {
     console.log("\n--dry 이므로 실제로 만들지는 않습니다. 예시:");
