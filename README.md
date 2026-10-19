@@ -258,6 +258,7 @@ scripts/
   collect-phrases.mjs     # 앱이 말하는 모든 문장을 실제 코드에서 수집
   list-audio.mjs          # 녹음할 파일 목록 출력 (npm run audio:list)
   gen-tts.mjs             # 좋은 TTS로 음성 파일 생성 (npm run audio:tts)
+  gen-elevenlabs.mjs      # 일레븐랩스 목소리로 음성 파일 생성 (npm run audio:eleven)
 public/
   manifest.json        # PWA manifest
   sw.js                # 서비스워커 (오프라인 캐싱)
@@ -310,6 +311,25 @@ public/
 ```bash
 npm run audio:tts -- --dry                 # 무엇이 만들어질지 미리 보기
 GOOGLE_TTS_API_KEY=키 npm run audio:tts    # 실제 생성 (public/audio/ 에 저장)
+```
+
+**②-1 일레븐랩스(ElevenLabs) 목소리로 만들기 (더 사람 같은 목소리)**
+
+GitHub → **Actions** → **🗣️ 일레븐랩스 목소리 만들기** → Run workflow.
+미리 저장소 시크릿에 `ELEVENLABS_API_KEY`(와 `ELEVENLABS_VOICE_ID`)를 넣어두세요.
+
+| 범위 | 내용 | 크레딧(기본 모델) |
+| --- | --- | --- |
+| `sample` | 맛보기 10개 — 목소리부터 들어보기 | 약 45 |
+| `combine` | 소리 만들기 화면 전체 | 약 2,500 |
+| `all` | 앱 전체 | 약 12,500 |
+
+같은 목소리로 이미 만든 파일은 `public/audio/elevenlabs.json` 에 기록돼 다시 돌려도 건너뜁니다
+(크레딧이 두 번 나가지 않아요). 목소리 ID를 바꾸면 그 목소리로 새로 만듭니다.
+
+```bash
+ELEVENLABS_API_KEY=키 ELEVENLABS_VOICE_ID=목소리ID npm run audio:eleven -- --scope=sample
+npm run audio:eleven -- --scope=all --dry   # 몇 자인지 미리 보기
 ```
 
 **③ 직접 녹음한 목소리 넣기 (무료)**

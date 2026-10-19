@@ -8,6 +8,8 @@
  * 첫 글자인 낱말을 먼저 적는다. 쉬운 낱말이 없는 글자(뎌, 쵸 …)는 비워둔다.
  */
 
+import { composeSyllable, consonantName, subjectParticle, vowelName } from "./korean";
+
 export interface SyllableWord {
   word: string;
   emoji: string;
@@ -417,4 +419,28 @@ export function splitAroundSyllable(word: string, syllable: string): [string, st
   const at = word.indexOf(syllable);
   if (at < 0) return [word, "", ""];
   return [word.slice(0, at), syllable, word.slice(at + syllable.length)];
+}
+
+/** 자음을 눌렀을 때 읽어주는 말: "기역하고 아가 만나면 가!" */
+export function buildCombineLine(consonant: string, vowel: string): string {
+  const vName = vowelName(vowel);
+  return `${consonantName(consonant)}하고 ${vName}${subjectParticle(vName)} 만나면 ${composeSyllable(consonant, vowel)}!`;
+}
+
+/**
+ * 소리 만들기 화면이 말할 수 있는 모든 말.
+ * 음성 파일을 미리 만들 때(scripts/collect-phrases.mjs) 쓴다.
+ */
+export function collectCombinePhrases(): string[] {
+  const phrases = new Set<string>();
+  for (const v of PLAY_VOWELS) {
+    phrases.add(vowelName(v));
+    for (const c of PLAY_CONSONANTS) {
+      const syllable = composeSyllable(c, v);
+      phrases.add(buildCombineLine(c, v));
+      phrases.add(syllable);
+      for (const item of getSyllableWords(syllable)) phrases.add(item.word);
+    }
+  }
+  return [...phrases];
 }

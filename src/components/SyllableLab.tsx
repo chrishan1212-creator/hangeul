@@ -5,10 +5,11 @@ import PlayShell from "@/components/PlayShell";
 import SettingsButton from "@/components/SettingsButton";
 import { unlockAudio } from "@/lib/sfx";
 import { cancelSpeech, delay, primeSpeech, speak } from "@/lib/speech";
-import { composeSyllable, consonantName, subjectParticle, vowelName } from "@/lib/korean";
+import { composeSyllable, consonantName, vowelName } from "@/lib/korean";
 import {
   PLAY_CONSONANTS,
   PLAY_VOWELS,
+  buildCombineLine,
   getSyllableWords,
   splitAroundSyllable,
 } from "@/lib/syllableWords";
@@ -92,15 +93,10 @@ export default function SyllableLab({ onHome }: SyllableLabProps) {
     if (runRef.current === run) setSpeaking(null);
   };
 
-  const comboLine = (c: string, v: string) => {
-    const vName = vowelName(v);
-    return `${consonantName(c)}하고 ${vName}${subjectParticle(vName)} 만나면 ${composeSyllable(c, v)}!`;
-  };
-
   const pickConsonant = (c: string) => {
     setConsonant(c);
     setPopKey((k) => k + 1);
-    void say("combo", comboLine(c, vowel));
+    void say("combo", buildCombineLine(c, vowel));
   };
 
   const pickVowel = (v: string) => {

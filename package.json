@@ -12,6 +12,7 @@
     "audio:manifest": "node scripts/gen-audio-manifest.mjs",
     "audio:list": "node scripts/list-audio.mjs",
     "audio:tts": "node scripts/gen-tts.mjs",
+    "audio:eleven": "node scripts/gen-elevenlabs.mjs",
     "build:toss": "TOSS_BUILD=1 next build && ait build",
     "deploy:toss": "ait deploy"
   },

@@ -26,6 +26,7 @@ async function loadAppLogic() {
     `
     export { MODE_LIST, getPool, buildPromptParts } from ${JSON.stringify(join(root, "src/lib/gameData"))};
     export { COMBO_VOWELS, ALL_VOWELS } from ${JSON.stringify(join(root, "src/lib/syllableCombos"))};
+    export { collectCombinePhrases } from ${JSON.stringify(join(root, "src/lib/syllableWords"))};
     export { ALL_ANIMALS, ALL_FOODS, buildFeastLine, buildGreetingLine } from ${JSON.stringify(join(root, "src/lib/animals"))};
     `,
     "utf8"
@@ -101,9 +102,18 @@ export async function collectPhrases() {
   for (const food of app.ALL_FOODS) sentences.add(app.buildFeastLine(food));
   for (const animal of app.ALL_ANIMALS) sentences.add(app.buildGreetingLine(animal));
 
+  // 소리 만들기 화면 (모음 소리, "기역하고 아가 만나면 가!", 글자, 낱말)
+  const combine = app.collectCombinePhrases();
+  for (const phrase of combine) {
+    if (phrase.includes(" ")) sentences.add(phrase);
+    else words.add(phrase);
+  }
+
   return {
     words: [...words].sort(),
     fragments: [...fragments].sort(),
     sentences: [...sentences].sort(),
+    /** 소리 만들기 화면에서만 쓰는 말 (일부만 먼저 만들어볼 때 쓴다) */
+    combine: [...combine].sort(),
   };
 }
