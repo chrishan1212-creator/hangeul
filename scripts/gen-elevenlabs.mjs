@@ -11,8 +11,8 @@
  *   combine : 소리 만들기 화면만 (446개, 약 2,500자)
  *   all     : 앱 전체 (약 1,000개, 약 12,600자)
  *
- * 일레븐랩스로 만든 파일은 public/audio/elevenlabs.json 에 "어떤 목소리로
- * 만들었는지" 적어둔다. 다시 돌려도 같은 목소리로 이미 만든 건 건너뛰므로
+ * 일레븐랩스로 만든 파일은 public/audio/elevenlabs.json 에 "어떤 목소리·모델·
+ * 속도로 만들었는지" 적어둔다. 다시 돌려도 같은 설정으로 이미 만든 건 건너뛰므로
  * 크레딧이 두 번 나가지 않는다. (--force 를 주면 전부 다시 만든다)
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -140,7 +140,9 @@ async function synthesize(text, attempt = 1) {
 async function main() {
   const phrases = (await pickPhrases()).filter((p) => normalizeKey(p));
   const record = loadRecord();
-  const done = (p) => VOICE_ID && record[normalizeKey(p)] === VOICE_ID;
+  // 목소리·모델·속도·안정감이 모두 같을 때만 "이미 만듦"으로 본다
+  const signature = `${VOICE_ID}|${MODEL}|${SPEED}|${STABILITY}`;
+  const done = (p) => VOICE_ID && record[normalizeKey(p)] === signature;
   const todo = phrases.filter((p) => force || !done(p));
   const chars = todo.reduce((sum, p) => sum + p.length, 0);
   const creditPerChar = /flash|turbo/.test(MODEL) ? 0.5 : 1;
@@ -187,7 +189,7 @@ async function main() {
     const key = normalizeKey(phrase);
     try {
       writeFileSync(join(audioDir, `${key}.mp3`), await synthesize(phrase));
-      record[key] = VOICE_ID;
+      record[key] = signature;
       made += 1;
       process.stdout.write(`\r만드는 중… ${made} / ${todo.length}`);
     } catch (error) {
